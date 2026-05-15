@@ -1,0 +1,220 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=1cm]{geometry}
+\usepackage{multicol}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{stmaryrd}
+
+% Colours per type
+\definecolor{defcol}{RGB}{0,82,155}
+\definecolor{eqcol}{RGB}{140,50,0}
+\definecolor{thmcol}{RGB}{0,120,50}
+\definecolor{algocol}{RGB}{100,0,130}
+\definecolor{excol}{RGB}{160,100,0}
+\definecolor{ambcol}{RGB}{180,0,0}
+
+\newcommand{\DEF}[1]{\textcolor{defcol}{\textbf{[DEF]}}\; #1}
+\newcommand{\EQ}[1]{\textcolor{eqcol}{\textbf{[EQ]}}\; #1}
+\newcommand{\THM}[1]{\textcolor{thmcol}{\textbf{[THM]}}\; #1}
+\newcommand{\ALGO}[1]{\textcolor{algocol}{\textbf{[ALGO]}}\; #1}
+\newcommand{\EX}[1]{\textcolor{excol}{\textbf{[EX]}}\; #1}
+\newcommand{\AMB}[1]{\textcolor{ambcol}{\textbf{[?]}\; #1}}
+\newcommand{\impl}[1]{\textit{[implicit:} #1\textit{]}}
+
+\titleformat{\section}[block]{\normalsize\bfseries\centering}{}{0em}{}[\hrule]
+\titlespacing{\section}{0pt}{4pt}{2pt}
+
+\setlist[itemize]{noitemsep, topsep=1pt, leftmargin=*}
+
+\begin{document}
+
+{\centering\Large\bfseries Blameworthiness Cheatsheet\\[2pt]}
+{\centering\small Friedenberg \& Halpern (2019)\par}
+\vspace{4pt}
+
+%% ─────────────────────────────────────────────
+\section*{\S2 — Causal Models}
+
+\DEF{Signature} $\mathcal{S} = (\mathcal{U}, \mathcal{V}, \mathcal{R})$: exogenous vars $\mathcal{U}$, endogenous vars $\mathcal{V}$, range function $\mathcal{R}$.
+
+\DEF{Causal Model} $M = (\mathcal{S}, \mathcal{F})$: signature + structural equations $F_X$ for each $X \in \mathcal{V}$.
+$$F_X : \Bigl(\times_{U \in \mathcal{U}} \mathcal{R}(U)\Bigr) \times \Bigl(\times_{Y \in \mathcal{V} \setminus \{X\}} \mathcal{R}(Y)\Bigr) \to \mathcal{R}(X)$$
+
+\DEF{Action Variables} $\mathcal{A} \subseteq \mathcal{V}$: special subset, one per agent.
+
+\DEF{Agent Signature} $\mathcal{S} = (\mathcal{U}, \mathcal{V}, \mathcal{R}, \mathcal{G})$ where $\mathcal{G}: \mathcal{A} \to G$ assigns an agent to each action variable.
+
+\DEF{Context} $\vec{u}$: assignment of values to all exogenous variables.
+
+\DEF{Causal Setting} $(M, \vec{u})$: one fully-determined possible world.
+
+\DEF{Outcome} $\varphi$: Boolean combination of primitive events $X = x$.
+
+\DEF{Intervention} $[A \leftarrow a]\varphi$: ``if action $a$ were taken, outcome $\varphi$.''
+
+\DEF{Semantic Eval} $\llbracket\psi\rrbracket_{\mathcal{K}}$: set of causal settings in $\mathcal{K}$ where $\psi$ holds.
+
+%% ─────────────────────────────────────────────
+\section*{\S3.1 — Single-Agent Blameworthiness (HK)}
+
+\DEF{Epistemic State} $\mathcal{E} = (\Pr, \mathcal{K})$: probability $\Pr$ over set $\mathcal{K}$ of causal settings.
+
+\DEF{Belief Support} $\mathcal{K}$: settings agent considers possible (support of $\Pr$). \impl{Only $\Pr(\llbracket\varphi\rrbracket_\mathcal{K})$ is needed; $\mathcal{K}$ never iterated directly.}
+
+\DEF{Cost Function (SA)} $c(a)$: expected cost agent ascribes to action $a$.
+
+\DEF{Balance Parameter} $N > \max_{a'} c(a')$: weights cost vs.\ $\delta$.
+
+\DEF{Alternative Action} $a'$: counterfactual action against which blame is measured. In committee: $a' = \text{yes}$ when agent voted no.
+
+\EQ{Intervention Prob} $\Pr(\llbracket[A{=}a]\varphi\rrbracket_\mathcal{K})$: prob.\ that forcing $A \leftarrow a$ yields $\varphi$. \impl{In committee: OutcomeProb with $p_i$ fixed to 1 or 0.}
+
+\EQ{$\delta$ (single-agent)}
+$$\delta^{\mathcal{E}}_{a,a',\varphi} = \max\!\bigl(0,\; \Pr(\llbracket[A{=}a]\varphi\rrbracket_\mathcal{K}) - \Pr(\llbracket[A{=}a']\varphi\rrbracket_\mathcal{K})\bigr)$$
+
+\EQ{$db$ (relative)}
+$$db^c_N(a,a',\mathcal{E},\varphi) = \delta^{\mathcal{E}}_{a,a',\varphi} \cdot \frac{N - \max(c(a')-c(a),\,0)}{N}$$
+
+\EQ{$db$ (individual blameworthiness)}
+$$db^c_N(a,\mathcal{E},\varphi) = \max_{a'}\; db^c_N(a,a',\mathcal{E},\varphi)$$
+
+%% ─────────────────────────────────────────────
+\section*{\S3.2 — Group Blameworthiness}
+
+\DEF{Agent Set} $Ag = \{ag_1,\ldots,ag_M\}$. $M=7$ in committee.
+
+\DEF{Coalition} $Ag' \subseteq Ag$ (frozenset); $|Ag'|$ = size; $Ag' \setminus \{j\}$; $Ag' \cup \{j\}$.
+
+\DEF{Reference State} $\mathcal{E}_1$: do-nothing baseline. \impl{$c(Ag', \mathcal{E}_1) = 0$; $\delta_{\mathcal{E}_1,\mathcal{E}_1,\varphi} = 0 \Rightarrow gb \geq 0$.}
+
+\DEF{Empty Group} $gb^c_N(\emptyset, \mathcal{E}, \varphi) = 0$: only finite-cost $\mathcal{E}_2$ is $\mathcal{E}_1$ itself.
+
+\DEF{Cost Function (group)} $c(Ag', \mathcal{E})$: cost for $Ag'$ to bring about $\mathcal{E}$. \AMB{Abstract; no derivation rule. Concrete per example.}
+
+\DEF{Epistemic State Rep.\ (committee)} $\mathcal{E}_2 \equiv$ probability vector $\mathbf{p} = (p_1,\ldots,p_7) \in [0,1]^7$; independent Bernoulli exogenous variables. \impl{General $(Pr, \mathcal{K})$ collapses here.}
+
+\EQ{Outcome Prob (committee)}
+$$\Pr(\llbracket\varphi\rrbracket_\mathcal{K}) = P\!\left(\sum_{i=1}^{7} \mathrm{Bernoulli}(p_i) \geq 4\right)$$
+Computed via exact convolution over all $2^7$ vote combinations.
+
+\EQ{$\delta$ (group)}
+$$\delta_{\mathcal{E}_1,\mathcal{E}_2,\varphi} = \max\!\bigl(0,\; \Pr_1(\llbracket\varphi\rrbracket_{\mathcal{K}_1}) - \Pr_2(\llbracket\varphi\rrbracket_{\mathcal{K}_2})\bigr)$$
+
+\EQ{$gb$ (relative)}
+$$gb^c_N(Ag',\mathcal{E}_1,\mathcal{E}_2,\varphi) = \delta_{\mathcal{E}_1,\mathcal{E}_2,\varphi} \cdot \frac{N - \max(c(Ag',\mathcal{E}_2)-c(Ag',\mathcal{E}_1),\,0)}{N}$$
+
+\EQ{$gb$ (group blameworthiness)}
+$$gb^c_N(Ag',\mathcal{E}_1,\varphi) = \max_{\{\mathcal{E}_2:\, c(Ag',\mathcal{E}_2)\text{ finite}\}} gb^c_N(Ag',\mathcal{E}_1,\mathcal{E}_2,\varphi)$$
+\AMB{Infinite search space in general; enumerated via $2^{|Ag|}$ coalitions in committee.}
+
+\THM{Group Monotonicity} $Ag'' \subseteq Ag' \subseteq Ag \Rightarrow gb(Ag'',\mathcal{E},\varphi) \leq gb(Ag',\mathcal{E},\varphi)$.
+
+%% ─────────────────────────────────────────────
+\section*{\S3.3 — Apportioning Blame (Shapley)}
+
+\EQ{Marginal Contribution}
+\begin{align*}
+mb^{c,\mathcal{E}}_N(j,Ag',\varphi) &= gb(Ag',\mathcal{E},\varphi) - gb(Ag'{\setminus}\{j\},\mathcal{E},\varphi) \quad j \in Ag'\\
+&= gb(Ag'{\cup}\{j\},\mathcal{E},\varphi) - gb(Ag',\mathcal{E},\varphi) \quad j \notin Ag'
+\end{align*}
+
+\EQ{Shapley Weight}
+$$w(Ag') = \frac{(|Ag'|-1)!\;(|Ag|-|Ag'|)!}{|Ag|!}$$
+Sums to 1 over all $Ag' \ni j$.
+
+\THM{Efficiency} $\displaystyle\sum_j db^{c,\mathcal{E}}_N(j,\varphi) = gb^c_N(Ag,\mathcal{E},\varphi)$.
+
+\THM{Symmetry} Permutation $\pi$ of agent names does not change blame: $db^{c,\mathcal{E}}_N(i,\varphi) = db^{\pi\circ c,\,\pi\circ\mathcal{E}}_N(\pi(i),\varphi)$.
+
+\THM{Strong Monotonicity} $mb(j,Ag',\varphi) \geq mb'(j,Ag',\varphi)$ for all $Ag' \Rightarrow db(j,\varphi) \geq db'(j,\varphi)$.
+
+\THM{Shapley Uniqueness (Young 1985)} Efficiency + Symmetry + Strong Monotonicity $\Rightarrow$ unique solution = Shapley value.
+
+\EQ{$db$ (Shapley / individual blameworthiness)}
+$$db^{c,\mathcal{E}}_N(j,\varphi) = \sum_{\substack{Ag' \subseteq Ag \\ ag_j \in Ag'}} w(Ag')\cdot mb^{c,\mathcal{E}}_N(j,Ag',\varphi)$$
+
+\THM{Non-Negativity} Group monotonicity $\Rightarrow db^{c,\mathcal{E}}_N(j,\varphi) \geq 0$ for all $j$.
+
+\THM{HK Agreement} In single-agent setting, $db_{\text{Shapley}}$ reduces to the HK definition.
+
+%% ─────────────────────────────────────────────
+\section*{\S3.4 — Committee Algorithms \impl{}}
+
+\ALGO{Enumerate Coalitions} Generate all $2^{|Ag|}$ subsets of $Ag$ as frozensets. Used in:
+\begin{itemize}
+  \item $gb$: iterate subsets as candidate $\mathcal{E}_2$ actions
+  \item $db_{\text{Shapley}}$: sum over all $Ag' \ni j$
+\end{itemize}
+
+\ALGO{CommitteeEpistemicFn} $(Ag', p_0, \alpha, j_{\text{focal}}) \to \mathbf{p}'$:
+$$p'_i = \min(p_0 + |Ag'| \cdot \alpha,\; 1{.}0) \quad \forall i$$
+$$p'_{j_{\text{focal}}} = 1{.}0 \quad \text{if } j_{\text{focal}} \in Ag' \quad \text{(deterministic self-switch)}$$
+
+\ALGO{CommitteeCostFn} $c(Ag', \mathcal{E}_2)$:
+$$= |Ag'| \times c_{\text{pressure}} + [j_{\text{focal}} \in Ag'] \times c_{\text{switch}}$$
+$$c(Ag', \mathcal{E}_1) = 0 \quad \text{(status quo is free)}$$
+
+%% ─────────────────────────────────────────────
+\section*{\S3.4 — Test Cases}
+
+\EX{Committee Setup} 7 agents; bill passes if $\geq 4$ vote yes. $ag_1$–$ag_5$ voted no; $ag_6$, $ag_7$ voted yes.
+
+\begin{tabular}{@{}lllllll@{}}
+\toprule
+Agent & $p_0$ & $c_{\text{pressure}}$ & $\alpha$ & $c_{\text{sw}}$ & Vote & $gb$ / $db_j$ \\
+\midrule
+$ag_1$ & 0.60 & $100n$ & 5\%$n$ & 2000 & No & 0.390 / 0.073 \\
+$ag_2$ & 0.60 & $100n$ & 5\%$n$ & 500  & No & 0.390 / 0.120 \\
+$ag_3$ & 0.60 & $100n$ & 3\%$n$ & 2000 & No & 0.317 / 0.079 \\
+$ag_4$ & 0.60 & $150n$ & 5\%$n$ & 2000 & No & 0.361 / 0.068 \\
+$ag_5$ & 0.40 & $100n$ & 5\%$n$ & 2000 & No & 0.560 / 0.125 \\
+$ag_6$ & 0.60 & $100n$ & 5\%$n$ & 2000 & Yes & 0.157 / 0.022 \\
+$ag_7$ & - & - & 5\%$n$ & - & Yes & - \\
+\bottomrule
+\end{tabular}
+
+\vspace{1em}
+\noindent \textbf{Glossary of Terms:}\\[0.5em]
+\noindent
+\begin{tabular}{@{}l p{0.8\linewidth}@{}}
+\textbf{Agent ($ag_j$)} & A specific member of the committee voting on the bill. \\
+\textbf{$p_0$} & The initial probability that the agent believes the other committee members will vote ``yes'' before any action is taken. \\
+\textbf{$c_{\text{pressure}}$} & The cost incurred by a coalition of $n$ agents to apply social pressure. \\
+\textbf{$\alpha$} & The percentage increase in each agent's probability of voting ``yes'' as a result of the applied social pressure. \\
+\textbf{$c_{\text{sw}}$} & The additional personal cost required for the agent to switch their own vote to ``yes'' if they are part of the coalition. \\
+\textbf{Vote} & The actual vote cast by the agent in the scenario (e.g., agents 1--5 voted no, agent 6 voted yes). \\
+\textbf{$gb$} & Group blameworthiness; the overall degree of blameworthiness ascribed to the entire group for the negative outcome. \\
+\textbf{$db_j$} & Individual degree of blameworthiness; the specific portion of the group's blameworthiness apportioned to agent $j$ using the Shapley value. \\
+\textbf{$n$} & The number of agents in a hypothetical coalition attempting to coordinate actions (such as applying social pressure). \\
+\end{tabular}
+
+With N = 5000, the empirical results for group blameworthiness ($gb$) and individual blameworthiness ($db_j$) are as follows:
+
+\begin{tabular}{@{}ll@{}}
+\toprule
+Agent & $gb$ / $db_j$ Calculated \\
+\midrule
+$ag_1$ & 0.3900 / 0.0727 \\
+$ag_2$ & 0.3900 / 0.1200 \\
+$ag_3$ & 0.3171 / 0.0785 \\
+$ag_4$ & 0.3582 / 0.0673 \\
+$ag_5$ & 0.5602 / 0.1248 \\
+$ag_6$ & 0.1540 / 0.0220 \\
+\bottomrule
+\end{tabular}
+
+%% ─────────────────────────────────────────────
+\section*{Open Ambiguities}
+
+\AMB{N value} Never given explicitly. Must be reverse-engineered from reported numbers ($\delta \approx 0.454$, $gb \approx 0.390$).
+
+\AMB{ag7 vote} Implied voted yes (symmetric with $ag_6$); blameworthiness never computed.
+
+\AMB{Self-switch semantics} Interpreted as: $p'_{j_{\text{focal}}} = 1.0$ (deterministic), not a probability increase.
+
+\end{document}
