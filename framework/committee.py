@@ -5,21 +5,22 @@ class EpistemicState:
     """
     Represents an agent's belief about the probability of each agent voting 'yes'.
     """
-    def __init__(self, probabilities_dict):
+    def __init__(self, probabilities_dict, threshold: int = 4):
         # e.g., {'ag1': 0.0, 'ag2': 0.6, 'ag3': 0.6, ...}
         self.probs = probabilities_dict
+        self.threshold = threshold
 
     def get_outcome_probability(self) -> float:
         """
-        Calculates the probability of the bill passing (>= 4 'yes' votes out of 7).
+        Calculates the probability of the bill passing (>= threshold 'yes' votes).
         """
         agents = list(self.probs.keys())
         pass_prob = 0.0
         
-        # Iterate over all 2^7 possible voting combinations
+        # Iterate over all 2^n possible voting combinations
         for i in range(len(agents) + 1):
             for yes_voters in itertools.combinations(agents, i):
-                if len(yes_voters) >= 4:
+                if len(yes_voters) >= self.threshold:
                     world_prob = 1.0
                     for ag in agents:
                         if ag in yes_voters:
@@ -63,7 +64,7 @@ class BlameCalculator:
             new_probs[switcher_id] = 1.0
             cost += self.switch_cost
             
-        return EpistemicState(new_probs), cost
+        return EpistemicState(new_probs, threshold=base_state.threshold), cost
 
     def group_blameworthiness(self, coalition_ids, base_state: EpistemicState, target_agent=None) -> float:
         """
