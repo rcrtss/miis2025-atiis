@@ -14,7 +14,7 @@ from __future__ import annotations
 
 # ── Run knobs ─────────────────────────────────────────────────────────────────
 SCENARIO    = "s01_health"
-MODEL       = "google/gemini-2.0-flash-001"   # OpenRouter model id
+MODEL       = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"   # OpenRouter model id
 TEMPERATURE = 1.0
 REPS        = 15                              # repetitions per (level × phrasing)
 SEED        = 0                               # reproducible nuisance sampling
