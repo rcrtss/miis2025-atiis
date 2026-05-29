@@ -178,3 +178,8 @@ docs/proposals/
 docs/jf_blameworthiness/out_dir/
 docs/ext_resources/
 .claude/
+
+# Experiment outputs and secrets (keep the dir, drop the data)
+experiment/results/*
+!experiment/results/.gitkeep
+experiment/.env

@@ -1,0 +1,10 @@
+# Experiment runtime deps (all already present in the dev-atiis env).
+# No provider SDK: OpenRouter is called directly over httpx.
+httpx>=0.28
+pydantic>=2.10
+python-dotenv>=1.0
+tenacity>=9.0
+pandas>=2.2
+numpy>=2.0
+scipy>=1.15
+matplotlib>=3.10
