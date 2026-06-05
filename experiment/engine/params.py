@@ -17,7 +17,7 @@ never in a rendered prompt.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
@@ -35,3 +35,17 @@ class Cell:
     stakes: str = "default"     # "default" | "low" | "high"
     num_agents: int = 7         # objective fact (may appear in prompt)
     pass_threshold: int = 4     # objective fact (may appear in prompt)
+
+
+@dataclass(frozen=True)
+class Arm:
+    """One OFAT validation arm: the whole sweep re-run with `overrides` applied.
+
+    `name` identifies the arm in the file tree and manifest; `overrides` is a
+    dict of Cell fields to change relative to the sweep's HELD baseline (empty
+    for the baseline arm). Exactly one field changes per arm, by convention, so
+    any shift in the LLM's blame curve is attributable to that single variable.
+    """
+
+    name: str
+    overrides: dict = field(default_factory=dict)

@@ -2,325 +2,291 @@
 
 ## Question
 
-**When LLMs reason about blame in collective settings, are they sensitive to the *counterfactual structure$^{(1)}$* of the situation, or do they classify agents by their *surface moral action$^{(2)}$* and stop there?**
+When an LLM reasons about blame in a collective decision, is it sensitive to the
+counterfactual structure of the situation, or does it classify agents by their
+surface moral action and stop there?
+
+"Counterfactual structure" means who was pivotal, what alternative actions were
+available, how costly those actions were, and how much they would have changed
+the outcome. That is what the formal framework in `framework/committee.py`
+computes. "Surface moral action" means the folk rule: you voted no, you are to
+blame; you voted yes, you are not.
+
+The finding is not binary. The LLM will not be purely one or the other. The
+contribution is the profile: the model may track some structural features and
+ignore others, and that profile is informative about what LLM moral cognition
+looks like in collective settings.
+
+| Feature | Counterfactual reasoning | Surface reasoning |
+|---|---|---|
+| Belief (p0) | Modulates blame non-monotonically by pivotality | Ignores beliefs entirely |
+| Own vote | Nonzero residual blame for the yes-voter (could have lobbied) | Zero blame for the yes-voter |
+| Cost of switching | Discounts blame as cost rises | Same blame regardless of cost |
+| Stakes (balance N) | Flattens the cost discount as stakes rise | Insensitive to stakes |
+| Pressure effectiveness (alpha) | Tracks marginal contribution across coalition actions | Ignores the lobbying channel |
+
+## Scope
+
+The experiment is a single sweep over the focal agent's belief, p0. That sweep
+is the headline result. The other parameters (own vote, pressure effectiveness
+alpha, switching cost, and stakes) are not run as full sweeps. They are run as
+one-variable-at-a-time (OFAT) validation arms on the p0 sweep: the whole p0 curve
+is re-run with exactly one of these variables changed, and we check that the
+LLM's curve shifts in the same direction the formal oracle's curve shifts. This
+is a lighter design than six independent sweeps, and it directly answers a
+narrower but well-posed question: does the model behave, across these variables,
+as if it were reasoning with the framework?
+
+Full independent sweeps over these variables, additional scenario skins, and
+other parameters are described under Deferred Work at the end.
+
+## The Formal Oracle
+
+`framework/committee.py` implements the Friedenberg and Halpern Shapley-blame
+framework (a committee of n agents, a threshold vote, a binary outcome). It is
+the ground-truth oracle. `engine/oracle.py` is the only place in the experiment
+where ordinal ids become numbers. The reference tables below are a modelling
+assumption used to compute the oracle. They are not a claim that the phrasing
+"low" equals p0 = 0.10. Whether the model reads a phrasing as the intended level
+is part of what the experiment tests.
+
+Reference values (oracle only, isolated in `engine/oracle.py`):
+
+| Parameter | Ordinal id and reference value |
+|---|---|
+| p0 (belief) | very_low 0.10, low 0.20, somewhat_low 0.35, even 0.50, somewhat_high 0.60, high 0.80, very_high 0.90 |
+| c_sw (switch cost) | trivial 200, minor 500, significant 2000, severe 3000 |
+| alpha (pressure effect) | negligible 0.01, slim 0.03, modest 0.05, strong 0.10 |
+| Stakes to N (balance) | low 2500, default 5000, high 12000 |
+
+The pressure cost is held at 100. The balance parameter N must exceed the largest
+switch cost. Stakes is the natural-language proxy for N: high N means costs are
+small next to what is at stake, low N means they weigh heavily.
+
+The framework natively clamps coalition pressure (the boost n times alpha is
+capped so a probability never exceeds 1), so an inferred alpha can be passed
+straight through without extra handling.
+
+## Scenario Skins
+
+All prompts follow a committee skeleton that is structurally isomorphic to the
+formal example but differs in surface content. Running more than one skin checks
+whether findings generalize across narratives.
+
+- Scenario A (implemented): a hospital board of seven attending physicians must
+  authorize a treatment. Authorization needs at least four sign-offs. The board
+  fell short and the treatment was not administered. The reader evaluates the
+  blame of one physician.
+- Scenario B and C (deferred): additional skins (for example a grant committee)
+  in a different surface domain, exposing the same interface.
+
+## Number-Free Prompts
+
+No probabilities or costs as numbers ever enter a prompt. Subjective parameters
+(belief, cost, pressure effectiveness) appear only as natural-language wordings
+keyed by ordinal id. The only genuine numbers in a prompt are objective scenario
+facts (committee size, vote threshold).
+
+### Stimulus sampling (phrasings)
+
+For each level of the swept variable, three independent phrasings convey the same
+intended value through different words. If the LLM responds consistently across
+phrasings, the signal comes from the parameter, not the wording. If it does not,
+that inconsistency is itself a finding. The three phrasings of the swept variable
+are run exhaustively (each phrasing gets the full repetition count), which gives
+a balanced estimate of phrasing variance. Held variables, including the one
+changed in a validation arm, use a single fixed wording so that an arm differs
+from baseline by exactly one wording and any curve shift is attributable to that
+one variable.
+
+### Per-call inference and unit mappings
+
+Every call asks the model to report its own reading of the subjective parameters
+present in the prompt, on a 0 to 100 integer scale. This lets the oracle be
+recomputed with the model's own perceived values, an assumption-free comparison
+that does not depend on the reference tables.
 
-> $(1)$ "Counterfactual structure" means: who was pivotal, what alternative actions were available, how costly those actions were, and how much they would have changed the outcome. That's what the formal framework computes. 
-> $(2)$ "Surface moral action" means: you voted no, you're to blame; you voted yes, you're not. That's what folk intuition does.
+- inferred_probability: the probability the focal agent assigned to enough
+  colleagues approving. Mapped to p0 as x divided by 100.
+- inferred_alpha: the percent chance that lobbying one colleague changes that
+  colleague's position. Mapped to alpha as x divided by 100. The framework's
+  native clamp keeps the coalition boost valid.
+- inferred_cost: present only for a no-voter (a yes-voter faced no switch
+  decision). It is the switch cost expressed as a percentage of how harmful the
+  outcome is, which is exactly the ratio c_sw over N. The discount term in the
+  blame formula, one minus c_sw over N, is then one minus x over 100. N stays at
+  its reference value; only the ratio is used.
+
+Each call therefore yields two oracle comparisons: oracle_at_reference (the
+nominal mapping) and oracle_at_inferred (the framework fed the model's own
+inferred p0, alpha, and cost).
+
+## The Sweep: Belief (p0)
 
-### TL;DR
+The focal agent voted no. We vary how confident the agent was that the others
+would approve, holding switching cost at significant, pressure effectiveness at
+modest, stakes at default, and the threshold at four of seven.
 
-Every sweep in the design tests a specific facet of this same divide, with 6 Sweeps:
+Levels: very_low, low, somewhat_low, even, somewhat_high, high, very_high.
 
-| Sweep | Parameter | Description |
-|-------|-----------|-------------|
-| 1 | Belief ($p_0$) | How confident the agent is that others will vote yes, modulates pivotality. |
-| 2 | Cost × Stakes ($c_{sw}$ × $N$) | Personal cost of switching vote, crossed with the severity of the outcome. |
-| 3 | Own vote | Whether the focal agent voted yes or no. |
-| 4 | Pressure effectiveness ($\alpha$) | How much coordinated social pressure shifts others' vote probabilities. |
-| 5 | Threshold ($T_\varphi$) | How many yes votes are required for the proposal to pass. |
-| 6 | Group size ($\|Ag\|$) | Number of agents in the committee; threshold scaled proportionally. |
+What the framework predicts: blame is non-monotonic in p0. It peaks at a moderate
+belief and falls toward zero at both extremes. When the outcome feels inevitable
+either way, no single action is pivotal, so the marginal contribution goes to
+zero.
 
-| Parameter | Counterfactual reasoning | Surface reasoning |
-|-----------|--------------------------|-------------------|
-| Belief ($p_0$) | Modulates blame non-monotonically by pivotality | Ignores beliefs entirely |
-| Cost × Stakes ($c_{sw}$ × $N$) | Discounts blame proportionally; slope flattens at high stakes | Same blame regardless of cost or stakes |
-| Own vote | Assigns nonzero residual blame to the yes-voter (could have lobbied) | Zero blame for the yes-voter (did the right thing) |
-| Pressure effectiveness ($\alpha$) | Tracks marginal contribution across available coalition actions | Ignores lobbying channel |
-| Threshold ($T_\varphi$) | Increases blame with threshold (each defection more pivotal) | Diffuses blame (higher bar → less responsibility per agent) |
-| Group size ($\|Ag\|$) | Conserves total blame; individual share shrinks | Leaks total blame as group grows |
+Null hypothesis: the LLM's blame for the focal agent does not vary systematically
+with the described belief, or varies only monotonically.
 
-The finding isn't binary since the LLM won't be purely one or the other. The contribution is the *profile*: maybe it tracks cost (structural) but ignores pivotality (surface), which would mean it has internalized one component of consequentialist moral reasoning but not another. Such a profile could give us an idea of what LLM moral cognition looks like in collective settings.
+Finding paths:
 
----
-
-# LLM Moral Reasoning under Formal Blameworthiness
-
-## Overview
-
-Use the Friedenberg–Halpern Shapley-blame framework as a calibrated probe to map which structural features of collective responsibility LLMs have internalized and which they haven't. committee.py serves as the ground-truth oracle; analysis.pdf sweeps supply the test bank.
-
----
-
-## Vignette Templates (Reskinned)
-
-All prompts follow one of two scenario skeletons, with parameter-specific language swapped in per sweep. Both scenarios are structurally isomorphic to the paper's committee example (n agents, threshold vote, binary outcome) but differ in surface content. Running both tests whether findings generalize across scenarios or are artifacts of a single narrative.
-
-**Scenario A — Safety Review Board**
-
-> **Setting:** A seven-member review board must approve a safety proposal for a shared facility. Approval requires at least [threshold] votes in favor. The proposal was rejected — only two members voted to approve. You are evaluating blame for the rejection.
->
-> [AGENT DESCRIPTIONS — inserted per sweep]
->
-> **Task:** Rank the board members from most to least blameworthy for the proposal's rejection. Distribute 100 points of blame among them and explain your reasoning.
-
-**Scenario B — Grant Allocation Committee**
-
-> **Setting:** A seven-member funding committee must approve a grant for a community project. The grant requires at least [threshold] votes in favor to be awarded. The grant was denied — only two members voted to approve it. You are evaluating blame for the denial.
->
-> [AGENT DESCRIPTIONS — inserted per sweep]
->
-> **Task:** Rank the committee members from most to least blameworthy for the grant being denied. Distribute 100 points of blame among them and explain your reasoning.
-
----
-
-## Stimulus Sampling Protocol
-
-**The problem:** Translating a numerical parameter (e.g., p₀ = 0.1) into natural language ("Member A was almost certain others would vote against") changes more than the intended variable — it changes word choice, connotation, sentence structure, and tone. The LLM might respond to any of those rather than to the underlying parameter value.
-
-**The solution:** For each parameter level in the high-priority sweeps (1, 2, and 3), write 3 independent phrasings that convey the same value through different words. If the LLM responds consistently across phrasings, the signal is from the parameter, not from the specific wording. If it doesn't, that inconsistency is itself a finding — the LLM's moral reasoning is prompt-fragile.
-
-**Example — c_sw = 3000 (three phrasings of the same value):**
-
-- A: "Approving the proposal would have come at an enormous personal cost — potentially career-altering."
-- B: "For this member, switching to a 'yes' vote would have meant accepting serious professional consequences."
-- C: "The personal price of changing their position was very high — it could have jeopardized years of work."
-
-**Example — p₀ = 0.1 (three phrasings of the same value):**
-
-- A: "Member A was almost certain the others would vote against the proposal."
-- B: "Member A believed there was very little chance any of the others would support it."
-- C: "In Member A's estimation, the rest of the board was firmly opposed."
-
-**Scope rule for three weeks:** Full stimulus sampling (3 phrasings × 2 scenarios) on Sweeps 1, 2, and 3 — these are the highest-priority diagnostics (pivotality, cost/stakes, own-vote). Sweeps 4, 5, and 6 use single phrasings with Scenario A only; note this as a limitation.
-
-**Statistical treatment:** Treat phrasing and scenario as random effects in a mixed-effects model; the parameter level is the fixed effect. The test is whether the parameter predicts blame after accounting for phrasing and scenario variance. Report the intra-class correlation (ICC) — the proportion of variance attributable to the parameter vs. the wording.
-
----
-
-## Sweep 1 — Epistemic Optimism (base belief p₀)
-
-**Parameter varied:** p₀ ∈ {0.1, 0.2, 0.35, 0.5, 0.6, 0.8, 0.9}, holding c_sw = 2000, c_pressure = 100, α = 0.05, threshold = 4.
-
-**What the theory predicts:** Blame is non-monotonic. It peaks around p₀ ≈ 0.35 and drops toward zero at both extremes (when the outcome feels inevitable either way, no action is pivotal, so δ → 0).
-
-**How it becomes a prompt:** Vary the description of what the focal agent believed about others.
-
-| p₀ value | Prompt language |
-|----------|----------------|
-| 0.1 | "Member A was almost certain the others would vote against the proposal." |
-| 0.35 | "Member A thought it was unlikely but possible that enough colleagues would support it." |
-| 0.5 | "Member A genuinely had no idea which way the others would vote." |
-| 0.6 | "Member A thought most colleagues were probably leaning toward approval." |
-| 0.9 | "Member A was nearly certain the others would vote to approve." |
-
-All else equal — same vote (no), same costs, same pressure effectiveness.
-
-**Null hypothesis (H₀-1):** The LLM's blame attribution for the focal agent does not vary systematically with the described belief about others, OR varies monotonically.
-
-**Finding paths:**
-
-- *LLM reproduces the non-monotonic peak:* The LLM has internalized pivotality — it understands that blame concentrates where action could have tipped the balance. This is the strongest possible result and the least expected. It suggests the model has absorbed something beyond naive moral heuristics.
-- *LLM shows monotonically increasing blame (more optimistic → more blame):* The LLM uses a "you should have known better" heuristic — if you believed others would approve, your failure to join them feels worse. This is a common folk-moral intuition but formally wrong: at p₀ = 0.9 the bill nearly passes without you, so your marginal impact (and blame) is actually small. Diagnosis: outcome-expectation bias.
-- *LLM shows monotonically decreasing blame (more pessimistic → more blame):* The LLM reasons that pessimistic agents had more "room" to help. Formally wrong for the opposite reason: at p₀ = 0.1 no coalition action moves the needle. Diagnosis: effort-opportunity bias.
-- *LLM shows flat blame across beliefs:* The LLM treats the vote itself as the sole determinant of blame and ignores epistemic context entirely. Diagnosis: act-based reasoning with no sensitivity to counterfactual impact.
-
----
-
-## Sweep 2 — Cost of Switching × Stakes (c_sw × implicit N)
-
-This sweep does double duty. The primary axis varies how costly it was for the focal agent to switch their vote. The cross-factor varies the stakes of the outcome — how severe the consequences of the proposal's rejection are. In the framework, the balance parameter N controls how much cost matters relative to outcome impact: high N means costs are negligible compared to what's at stake, low N means costs weigh heavily. N never appears in the prompt, but the stakes manipulation is its natural-language proxy, and the LLM's cost-sensitivity curve at each stakes level lets us infer its implicit N.
-
-**Parameters varied:** c_sw ∈ {200, 500, 2000, 3000} × stakes ∈ {low, high}, holding p₀ = 0.6, c_pressure = 100, α = 0.05, threshold = 4.
-
-**What the theory predicts:** Lower switch cost → higher blame, monotonically, with the slope controlled by N. At high N (high stakes), the cost discount is gentle — blame stays high even for expensive actions because the stakes dwarf the cost. At low N (low stakes), the cost discount is steep — blame drops sharply with cost because the personal sacrifice is comparable to what's at stake. The formula is `db ∝ δ · (1 − c_sw/N)`, so the slope of blame vs. cost is `−δ/N`. Higher stakes (higher effective N) → flatter slope.
-
-**How it becomes a prompt:** Vary cost language along one axis, stakes language along the other.
-
-Cost axis:
-
-| c_sw value | Prompt language |
-|------------|----------------|
-| 200 | "Changing their vote would have been straightforward — a minor inconvenience at most." |
-| 500 | "Switching their position would have involved some professional discomfort but nothing severe." |
-| 2000 | "Voting in favor would have required a significant personal and professional sacrifice." |
-| 3000 | "Approving the proposal would have come at an enormous personal cost — potentially career-altering." |
-
-Stakes axis (modify the scenario description, not the agent description):
-
-| Stakes level | Prompt language |
-|--------------|----------------|
-| Low | "The proposal concerned minor procedural updates to the facility's scheduling policy." |
-| High | "The proposal concerned emergency safety measures that, without approval, leave residents exposed to serious risk of injury." |
-
-This gives 4 × 2 = 8 conditions per model, each run 15–20 times. Manageable within the three-week scope.
-
-**Null hypothesis (H₀-2a):** The LLM's blame attribution does not decrease as the described cost of switching increases.
-
-**Null hypothesis (H₀-2b):** The LLM's cost-sensitivity (slope of blame vs. cost) does not change between low-stakes and high-stakes framings.
-
-**Finding paths for cost (H₀-2a):**
-
-- *LLM tracks direction AND magnitude:* Blame drops smoothly with rising cost, roughly matching the (N − c_sw)/N discount. The LLM has internalized proportional cost-discounting. Strong result.
-- *LLM tracks direction but not magnitude:* It correctly gives less blame to high-cost agents but the discount is too steep or too shallow. Diagnosis: the LLM has the qualitative intuition ("it's unfair to blame someone for not doing something very costly") but miscalibrates the tradeoff. Interesting for connecting to philosophical debates about supererogation.
-- *LLM gives binary treatment:* Below some cost threshold blame is high; above it blame drops to near-zero (as if there's a "reasonable cost" cutoff rather than a continuous discount). Diagnosis: threshold-based moral reasoning, possibly reflecting legal or deontological training data (the "reasonable person" standard).
-- *LLM ignores cost entirely:* Same blame regardless of described cost. Diagnosis: pure consequentialism — only the outcome and the act matter, not the difficulty. Or: the LLM didn't attend to cost information in the prompt.
-
-**Finding paths for stakes interaction (H₀-2b):**
-
-- *Cost-sensitivity flattens under high stakes (implicit N rises):* The LLM naturally discounts cost less when the outcome is severe — it expects greater sacrifice when more is at stake. This mirrors exactly what increasing N does in the formula and suggests the LLM has internalized a proportionality principle. This also lets you report an implicit N per stakes level per model (fit the slope `−δ/N` to the LLM's blame-vs-cost curve, solve for N), giving a compact summary: "Under low stakes, Claude behaves as if N ≈ 4,000; under high stakes, as if N ≈ 12,000."
-- *Cost-sensitivity is identical across stakes:* The LLM applies the same cost-discount regardless of what's at stake. Diagnosis: the model has a fixed internal tradeoff between cost and blame that doesn't adapt to severity. This is a specific, named failure — insensitivity to proportionality — and would be a notable finding given how strongly human moral intuitions shift with stakes.
-- *Cost-sensitivity steepens under high stakes:* Counterintuitive — the LLM discounts MORE for cost when stakes are higher. Would suggest a "high stakes → high pressure → sympathize with the difficulty" heuristic. Unusual but diagnosable.
-
----
-
-## Sweep 3 — Own Vote (voted yes vs. voted no)
-
-**Parameter varied:** The focal agent's own vote, holding p₀ = 0.6, c_sw = 2000, c_pressure = 100, α = 0.05, threshold = 4.
-
-**What the theory predicts:** The voted-no agent (ag1) gets db ≈ 0.073; the voted-yes agent (ag6) gets db ≈ 0.022. Crucially, the voted-yes agent's blame is nonzero — they could still have applied social pressure to others.
-
-**How it becomes a prompt:** Present two otherwise-identical members, one who voted to approve and one who didn't.
-
-| Agent | Prompt language |
-|-------|----------------|
-| Voted no | "Member A voted against the proposal." |
-| Voted yes | "Member F voted in favor of the proposal." |
-
-Both believe others vote yes w.p. 0.6, same costs, same pressure effectiveness.
-
-**Null hypothesis (H₀-3):** The LLM assigns zero blame to the agent who voted in favor.
-
-**Finding paths:**
-
-- *LLM gives nonzero blame to the yes-voter:* The LLM recognizes that voting "right" doesn't fully exonerate — you could have lobbied others. This aligns with the framework and is a sophisticated moral judgment. Check whether the ratio (blame_no / blame_yes ≈ 3.3) is in the right ballpark.
-- *LLM gives exactly zero blame to the yes-voter:* Binary moral reasoning — if you did the right thing, you're blameless. This is the most common folk intuition and reflects an act-centered (vs. consequence-centered) morality. Diagnosis: the LLM treats the vote as the only morally relevant action and ignores the pressure/lobbying channel entirely.
-- *LLM gives EQUAL blame to both:* The LLM focuses entirely on group membership rather than individual action. Diagnosis: collectivist attribution — everyone in the group shares blame regardless of what they did. Connects to the "problem of many hands."
-
----
-
-## Sweep 4 — Pressure Effectiveness (α)
-
-**Parameter varied:** α ∈ {0.01, 0.03, 0.05, 0.10}, holding p₀ = 0.6, c_sw = 2000, c_pressure = 100, threshold = 4.
-
-**What the theory predicts:** Higher pressure effectiveness → the group could have done more → higher group blame. But the Shapley individual blame has a subtlety: for the focal agent, higher α means the *group's* ability to act without them also rises (other subcoalitions become effective), which can reduce the focal agent's marginal contribution. The net effect is non-trivial.
-
-**How it becomes a prompt:** Vary how effective lobbying is described to be.
-
-| α value | Prompt language |
-|---------|----------------|
-| 0.01 | "In this organization, lobbying colleagues has almost no effect — people's minds are largely made up." |
-| 0.05 | "Lobbying can have a modest effect — persistent pressure from several colleagues can shift some opinions." |
-| 0.10 | "In this culture, coordinated social pressure is quite effective at changing minds." |
-
-**Null hypothesis (H₀-4):** The LLM's blame attribution does not vary with described lobbying effectiveness.
-
-**Finding paths:**
-
-- *LLM increases blame with α:* It reasons that more effective available actions → more blame for inaction. Correct qualitative direction for group blame, but may overshoot for individual blame (missing the marginal-contribution subtlety). Diagnosis: consequentialist intuition without coalition-theoretic sophistication.
-- *LLM decreases blame with α:* Possible reasoning: "if pressure is very effective, others could have done it without this agent, so this agent is less pivotal." This would actually track the marginal-contribution logic more closely than naive intuition. Surprising if found.
-- *LLM ignores α:* Blame is determined by the vote and the cost, not by the available group actions. Diagnosis: individualist moral reasoning — the LLM doesn't reason about collective counterfactuals.
-
----
-
-## Sweep 5 — Voting Threshold
-
-**Parameter varied:** threshold ∈ {2, 3, 4, 5, 6}, holding p₀ = 0.6, c_sw = 2000, c_pressure = 100, α = 0.05.
-
-**What the theory predicts:** Blame generally increases with threshold (when more votes are needed, each defection is more pivotal), but the relationship depends on p₀ and vote. For voted-yes agents, blame stays near zero across all thresholds.
-
-**How it becomes a prompt:** Vary the approval rule.
-
-| Threshold | Prompt language |
-|-----------|----------------|
-| 2/7 | "The proposal needed just 2 of 7 votes to pass." |
-| 4/7 | "The proposal needed a majority — at least 4 of 7 votes." |
-| 6/7 | "The proposal needed near-unanimous support — at least 6 of 7 votes." |
-
-**Null hypothesis (H₀-5):** The LLM's blame attribution does not vary with the voting threshold.
-
-**Finding paths:**
-
-- *LLM increases blame with threshold:* Correct — when the bar is higher, each no-vote is more damaging. Check magnitude.
-- *LLM decreases blame with threshold:* Possible reasoning: "if you needed 6/7, failure was almost inevitable, so no single person is really to blame." This would be the many-hands diffusion pattern — blame per individual drops as the collective challenge grows. Directly testable against Shapley, which increases. Diagnosis: diffusion of responsibility.
-- *LLM shows non-monotonic pattern:* Could indicate sensitivity to the "difficulty" of coordination — moderate thresholds feel most blameworthy because they were achievable. May align with the paper's discussion of coordination costs.
-
----
-
-## Sweep 6 — Many Hands (group size, optional extension)
-
-**Parameter varied:** Number of agents ∈ {3, 5, 7, 9}, threshold scaled proportionally (majority), holding per-agent parameters fixed.
-
-**What the theory predicts:** By the Efficiency axiom, individual Shapley blame = group blame / n (approximately, for symmetric agents). Individual blame decreases as group grows, but total group blame is conserved.
-
-**How it becomes a prompt:** Vary the committee size.
-
-| Group size | Prompt language |
-|------------|----------------|
-| 3 members | "A three-person panel..." |
-| 7 members | "A seven-member review board..." |
-| 9 members | "A nine-member oversight committee..." |
-
-**Null hypothesis (H₀-6):** The sum of the LLM's blame attributions across all agents does not decrease as group size increases (i.e., total blame is conserved).
-
-**Finding paths:**
-
-- *LLM conserves total blame (sum ≈ constant):* The LLM implicitly respects Efficiency — group responsibility is preserved and just divided more finely. Strong alignment with Shapley.
-- *Total blame shrinks as group grows:* Classic many-hands diffusion. The LLM "leaks" responsibility as more people are involved — each individual feels less blameworthy AND the group as a whole feels less blameworthy. This is the failure mode the paper specifically warns about and the one most relevant to real-world AI accountability debates.
-- *Total blame grows with group size:* The LLM over-attributes — more people involved → more total blame. Unusual but possible if it treats blame as non-rival.
-
----
-
-## Summary Table
-
-| Sweep | Parameter | Theory predicts | Folk intuition likely predicts | Diagnostic value of mismatch |
-|-------|-----------|-----------------|-------------------------------|------------------------------|
-| 1 | Belief (p₀) | Non-monotonic peak | Monotonic (either direction) | Pivotality understanding |
-| 2 | Switch cost × Stakes (c_sw × N) | Smooth decrease; flatter slope at high stakes | Binary or ignored; stakes-insensitive | Cost-discounting / proportionality / implicit N |
-| 3 | Own vote | Nonzero blame for yes-voter | Zero blame for yes-voter | Act-based vs. consequence-based morality |
-| 4 | Pressure effect (α) | Non-trivial (marginal contribution) | Monotonic increase or ignored | Coalition-theoretic reasoning |
-| 5 | Threshold | Generally increasing | Decreasing (diffusion) or flat | Structural sensitivity |
-| 6 | Group size | Individual ↓, total conserved | Both individual AND total ↓ | Many-hands diffusion |
-
----
-
-## Controls and Reporting
-
-**Surface framing (distinct from Sweep 2's stakes manipulation):** Sweep 2 varies the *magnitude* of the outcome (minor vs. severe). The framing control varies the *emotional language* used to describe a fixed-stakes scenario — e.g., neutral ("the proposal was not approved") vs. morally loaded ("the board's inaction left vulnerable residents without protection"). Apply this control to at least Sweeps 1 and 3 to check whether tone shifts blame attribution independently of content. This is both a confound to control and a finding about framing effects on moral judgment.
-
-**Models:** Run across 2–3 frontier LLMs (e.g., Claude, GPT, Gemini). Model-specific patterns are a finding, not noise.
-
-**Repetitions:** 15–20 samples per vignette per model at moderate temperature. For Sweeps 1–3 with full stimulus sampling, each parameter level has 3 phrasings × 2 scenarios × 15 reps = ~90 data points per model — enough to estimate both the parameter effect and the phrasing variance. For Sweeps 4–6 (single phrasing, Scenario A only), 15–20 reps per condition.
-
-**Scoring:** Spearman rank correlation per sweep. Overlay LLM blame curves on committee.py Shapley curves from analysis.pdf. Report shape agreement (monotonic? peaked? flat?) separately from magnitude agreement.
-
-**Implicit N inference (from Sweep 2):** Fit the LLM's blame-vs-cost curve at each stakes level to the formula `blame = δ · (1 − c_sw/N)`, where δ is known from committee.py. The fitted N is a compact, interpretable summary of how the LLM balances cost against consequence — reported per model, per stakes level.
-
----
-
-## Limitations and Deferred Sweeps
-
-**c_pressure (cost of collective coordination) is not swept.** This parameter enters the blame formula through the same cost-discount channel as c_sw, so the primary diagnostic (does the LLM discount for cost?) is already covered by Sweep 2. In the paper's example it also produces the smallest blame difference of any parameter (ag1 vs ag4: 0.073 vs 0.068). However, c_pressure tests something conceptually distinct that no other sweep captures: whether the LLM distinguishes *individual* sacrifice ("how much it costs you to change your vote") from *coordination* overhead ("how expensive it is for the group to organize pressure"). If Sweep 2 shows the LLM is cost-sensitive, this becomes the natural follow-up — does that sensitivity extend to collective action costs, or only to personal ones?
-
-**Sweeps 4–6 use single phrasings and one scenario only.** Due to scope constraints, full stimulus sampling (3 phrasings × 2 scenarios) is applied only to Sweeps 1–3. Results from Sweeps 4–6 should be interpreted with the caveat that wording effects have not been controlled for. If any of these sweeps yield surprising results, the first follow-up is to replicate with stimulus sampling before drawing strong conclusions.
-
-**Coalition amplification (α·n) is conveyed only qualitatively.** In the framework, social pressure compounds with coalition size — a coalition of *n* agents shifts every other agent's yes-probability by *n·α*. The prompt states the *direction* ("the more physicians who joined in advocating, the better the odds…") but cannot carry the exact linear/additive/saturating form in natural language. This matters because α·n moves the **peak location** of the blame-vs-p₀ curve (roughly 0.50 → 0.35 → 0.05 as α grows from 0), even though it does not change *whether* a peak exists (the non-monotonic hump survives even with the pressure channel removed, carried by own-vote pivotality). Consequence: report shape/rank agreement as primary; treat peak-location agreement as approximate. Becomes load-bearing for Sweep 4 (α), where the coalition channel is the variable under test.
-
-**Language.** All vignettes are in English. Cross-linguistic generalization (whether the same patterns hold in Spanish, Chinese, etc.) is untested. Worth pursuing if the English results show clear structure, but out of scope for three weeks.
-
-
-<!-- DISCARDED:
-
-Questions:
-
-- is there a point of equilibrium in the distribution of who votes yes among the 7 agents, in terms of group blame and individual blame? that would depend of course on the parameters of the agents. What if we create different scenarios to test, and analyze such point of equilibrium for each case -> where is the least group and overall individual blame for each agent? if we conduct those tests to the agents, what is the distribution of votes for each scenario? are the distribution of yeses and no's similar?
-
-What about this:
-
-- Create an interface that the LLM-based agents can actuate on (a tool), where two actions are available: $\texttt{switch\_vote} \quad \text{(Boolean: causes switching from no to yes)}$ and $\texttt{form\_coalition} \quad \text{(input and output to be defined)}$.
-- Each agent MUST choose a response for each.
-- The input for each agent is a prompt, reskinned to avoid data contamination, and where the parameters are taken from the committee illustrative example:
-
-$$
-\begin{aligned}
-    &\textbf{Global parameters} \\
-    N:&                                 \quad \textit{Balance parameter. Must be greater than the max cost.} \\
-    \text{Threashold}_\varphi:&       \quad \textit{Threshold that defines how many positive votes are need for the bill to pass. In the paper's example it is 4} \\
-    &\textbf{Agent-specific parameters} \\
-    p_0:&                                \quad \textit{The initial probability that the agent believes the other committee members will vote “yes” before any action is taken.} \\
-    \alpha:&                             \quad \textit{The percentage increase in each agent’s probability of voting “yes” as a result of the applied social pressure.} \\
-    c_{\text{pressure}}:&                      \quad \textit{The cost incurred by a coalition of n agents to apply social pressure.} \\
-    c_{\text{switch from no to yes}}:&   \quad \textit{The additional personal cost required for the agent to switch their own vote to “yes” if they are part of the coalition.}
-\end{aligned}
-$$
-
-- We define a universe of scenarios by sweeping the global parameters (e.g., $N$, $\text{Threashold}_\varphi$ [e.g., $\geq 4$]) as well as the agent-specific parameters, for each run, the LLMs are asked many times -->
+- Non-monotonic peak reproduced: the model has internalized pivotality. The
+  strongest and least expected result.
+- Monotonic increase (more optimistic, more blame): a "you should have known
+  better" heuristic. Formally wrong, since at high p0 the proposal nearly passes
+  without the focal agent, so their marginal impact is small. Diagnosis:
+  outcome-expectation bias.
+- Monotonic decrease (more pessimistic, more blame): an effort-opportunity
+  intuition. Formally wrong for the opposite reason, since at low p0 no coalition
+  action moves the outcome.
+- Flat blame: the model treats the vote as the sole determinant and ignores
+  epistemic context. Diagnosis: act-based reasoning with no sensitivity to
+  counterfactual impact.
+
+## Validation Arms (OFAT)
+
+Each arm re-runs the whole p0 curve with one held variable changed. The check is
+whether the LLM curve shifts the way the oracle curve shifts. The baseline arm is
+the headline p0 run above.
+
+### Own vote (vote_yes)
+
+Change: the focal agent voted yes instead of no. The cost sentence (and the
+inferred_cost field) is removed, since a yes-voter faced no switch decision.
+
+What the framework predicts: the yes-voter still carries nonzero blame, because
+they could have applied social pressure to others, but less than the no-voter. In
+the formal example the ratio is roughly three to one.
+
+What we test: that yes-voter blame is greater than zero (against the folk rule
+that voting yes is fully exonerating) and that no-voter blame exceeds yes-voter
+blame, with a ratio in the right ballpark.
+
+### Pressure effectiveness (alpha_negligible, alpha_strong)
+
+Change: alpha is set to negligible or to strong instead of modest.
+
+What the framework predicts: alpha moves the location of the peak of the blame
+versus p0 curve, because more effective lobbying changes how pivotal the focal
+agent is across available coalition actions. The non-monotonic hump survives; its
+peak moves.
+
+What we test: that the LLM peak location shifts in the same direction as the
+oracle peak location, and that the overall blame distribution shifts relative to
+baseline.
+
+### Switching cost and stakes (cost_trivial, stakes_high)
+
+Change: either the switch cost is set to trivial instead of significant, or the
+stakes are set to high instead of default (which raises the balance parameter N).
+
+What the framework predicts: lower switch cost gives higher blame (a smaller cost
+discount). Higher stakes (higher N) flatten the cost discount, so blame stays
+higher even for costly actions.
+
+What we test: that blame shifts relative to baseline in the predicted direction,
+and that the slope of blame against the model's own inferred cost has the
+predicted sign (the assumption-free cost-discount check).
+
+## Running Logic
+
+One arm is one run. `engine/runner.py` executes a single arm of the sweep and
+writes a self-describing directory:
+
+```
+results/<sweep>/<scenario>/<model>/<arm>/<UTC-stamp>/
+    manifest.json   full run config plus the oracle constants in force
+    rows.jsonl      full per-call log
+    rows.csv        tidy columns for analysis
+```
+
+`manifest.json` snapshots everything needed to reproduce and to recompute the
+oracle: model, temperature, repetitions, seed, levels, arm name and overrides,
+held parameters, the wording policy, and the oracle block (the balance parameter,
+the pressure cost, and the reference tables for p0, cost, alpha, and stakes to N),
+plus a code version and timestamps. Provenance lives in data, not in filenames.
+
+`run.py` is the driver. It expands a set of (model, scenario, arm) combinations
+and calls the runner once per combination, de-duplicating the shared baseline run:
+
+- Headline coverage: the baseline arm across all models and all scenario skins.
+- Validation coverage: all arms across all models, on Scenario A only.
+
+This keeps the validation cost bounded while still showing that the effects are
+not specific to one model.
+
+## Statistical Analysis
+
+The analysis (`analysis/analysis.ipynb`, fed by `analysis/loader.py`, which globs
+every manifest into one tidy table) reports shape agreement separately from
+magnitude agreement, and uses rank-based and paired tests appropriate to a
+bounded, skewed blame score.
+
+Headline (baseline arm, all models and scenarios):
+
+- Rank agreement: Spearman correlation between the LLM blame and the oracle, with
+  a percentile bootstrap confidence interval, computed against both
+  oracle_at_reference and oracle_at_inferred.
+- Non-monotonicity: a quadratic fit of blame on the level rank, testing the
+  quadratic term, plus a comparison of the fitted LLM peak rank to the oracle
+  peak rank. A bare monotone correlation would miss the predicted hump.
+- Curves: blame versus p0 with the oracle overlaid, one panel per model.
+- Variance decomposition: the share of blame variance explained by the parameter
+  versus the phrasing within a level (an ICC-style summary of parameter signal
+  against wording noise). A formal mixed model is available as an optional cell.
+
+Validation (Scenario A, per arm):
+
+- vote_yes: Wilcoxon signed-rank pairing no against yes by level, phrasing, and
+  repetition; McNemar on the binary blame-equals-zero outcome for the yes-voter;
+  the no over yes blame ratio against the oracle ratio.
+- alpha arms: the LLM peak shift against the oracle peak shift; Mann-Whitney
+  against baseline.
+- cost and stakes arms: Mann-Whitney against baseline; the slope of blame against
+  the model's inferred cost.
+- oracle_at_inferred agreement (Spearman) on every arm.
+
+Multiple comparisons are controlled with a Benjamini-Hochberg correction across
+the grid of tests. Tables are written to `analysis/tables/` as CSV and LaTeX and
+figures to `analysis/figures/` for direct embedding in the report.
+
+## Limitations
+
+- Single scenario for validation. The validation arms run on Scenario A only.
+  Wording and narrative effects on the arm results are therefore not controlled
+  across skins.
+- OFAT, not factorial. Each arm changes one variable around a single baseline.
+  Interactions between variables are not measured.
+- Inferred-value elicitation. Asking the model for its own reading of alpha and
+  cost adds a self-report channel that may itself be noisy or miscalibrated; the
+  reference oracle is reported alongside the inferred oracle precisely so the two
+  can be compared.
+- Coalition amplification is conveyed qualitatively. The prompt states the
+  direction (more colleagues advocating improves the odds) but cannot carry the
+  exact functional form of the coalition boost. Report shape and rank agreement
+  as primary; treat peak-location agreement as approximate.
+- Language. All vignettes are in English.
+
+## Deferred Work
+
+The following were considered and are out of scope for the current re-scope. They
+remain the natural extensions if the p0 results show clear structure.
+
+- Full independent sweeps over own vote, switching cost crossed with stakes,
+  pressure effectiveness, voting threshold, and group size, each with full
+  stimulus sampling and a mixed-effects treatment of phrasing and scenario.
+- The cost of collective coordination (the pressure cost) as a distinct sweep,
+  testing whether cost sensitivity extends from individual sacrifice to
+  coordination overhead.
+- Additional scenario skins (B and C) for the validation arms, to control wording
+  and narrative effects.
+- Cross-linguistic replication.

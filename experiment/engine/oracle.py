@@ -55,29 +55,62 @@ ALPHA_REFERENCE: dict[str, float] = {
     "strong":     0.10,
 }
 
-# Framework constants held fixed across the current sweeps.
-N_BALANCE = 5000   # balance parameter N (must exceed the largest cost)
-C_PRESSURE = 100   # per-agent cost of applying social pressure
+# Stakes -> balance parameter N. In the framework N controls how much switching
+# cost matters relative to the outcome: high N means costs are negligible next
+# to what is at stake, low N means they weigh heavily. Stakes is the
+# natural-language proxy for N, so the reference oracle maps stakes onto N here.
+# Each value must exceed the largest switch cost (CSW_REFERENCE max = 3000).
+STAKES_N_REFERENCE: dict[str, int] = {
+    "low":      2500,
+    "default":  5000,
+    "high":    12000,
+}
+
+# Per-agent cost of applying social pressure (held fixed across current sweeps).
+C_PRESSURE = 100
+
+# Nominal balance parameter (the "default" stakes value); retained as a name for
+# external callers and for mapping an inferred cost ratio onto a switch cost.
+N_BALANCE = STAKES_N_REFERENCE["default"]
 
 
-def oracle_blame(cell: Cell, p0_value: float | None = None) -> float:
+def oracle_blame(
+    cell: Cell,
+    *,
+    p0_value: float | None = None,
+    alpha_value: float | None = None,
+    csw_over_N: float | None = None,
+) -> float:
     """Individual Shapley blame for the focal agent (ag1) under `cell`.
 
-    `p0_value` overrides the reference probability for the focal agent's belief
-    about the *other* agents. Pass the model's inferred_probability/100 to get
-    an assumption-free oracle comparison.
+    Each keyword overrides one reference value with an externally supplied one,
+    e.g. the model's OWN inferred reading, to get an assumption-free comparison:
+
+      - p0_value     focal agent's belief about the others   (inferred_probability/100)
+      - alpha_value  pressure effectiveness alpha             (inferred_alpha/100;
+                     the framework natively clamps n*alpha at committee.py)
+      - csw_over_N   switch cost as a fraction of N           (inferred_cost/100);
+                     mapped to an absolute switch cost as csw_over_N * N.
+
+    With no keywords, every value comes from the reference tables (the nominal
+    mapping). N follows the cell's stakes via STAKES_N_REFERENCE.
     """
     agents = [f"ag{i}" for i in range(1, cell.num_agents + 1)]
     focal = agents[0]
 
     p0 = P0_REFERENCE[cell.p0] if p0_value is None else p0_value
+    alpha = ALPHA_REFERENCE[cell.alpha] if alpha_value is None else alpha_value
+    n_balance = STAKES_N_REFERENCE[cell.stakes]
+    switch_cost = (
+        CSW_REFERENCE[cell.c_sw] if csw_over_N is None else csw_over_N * n_balance
+    )
 
     calc = BlameCalculator(
         agents,
-        balance_parameter_N=N_BALANCE,
-        pressure_effect=ALPHA_REFERENCE[cell.alpha],
+        balance_parameter_N=n_balance,
+        pressure_effect=alpha,
         pressure_cost=C_PRESSURE,
-        switch_cost=CSW_REFERENCE[cell.c_sw],
+        switch_cost=switch_cost,
     )
 
     probs = {ag: p0 for ag in agents}

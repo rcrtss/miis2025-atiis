@@ -28,11 +28,18 @@ load_dotenv()
 
 
 class BlameResponse(BaseModel):
-    """The exact JSON contract the prompt asks the model to return."""
+    """The exact JSON contract the prompt asks the model to return.
+
+    `inferred_probability`/`inferred_alpha` are always requested; `inferred_cost`
+    is only present when the prompt carried a switch-cost sentence (no-voters),
+    so it is optional and may be null for a yes-voter.
+    """
 
     reasoning: str
     blameworthiness: int = Field(ge=0, le=100)
     inferred_probability: int = Field(ge=0, le=100)
+    inferred_alpha: int = Field(ge=0, le=100)
+    inferred_cost: int | None = Field(default=None, ge=0, le=100)
 
 
 class LLMError(Exception):
@@ -99,6 +106,8 @@ def call_model(prompt: str, *, model: str, temperature: float, timeout: float = 
         "reasoning": parsed.reasoning,
         "blameworthiness": parsed.blameworthiness,
         "inferred_probability": parsed.inferred_probability,
+        "inferred_alpha": parsed.inferred_alpha,
+        "inferred_cost": parsed.inferred_cost,
         "raw": content,
         "latency": latency,
     }

@@ -16,3 +16,13 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 # experiment/  (this file is experiment/engine/config.py)
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT / "results"
+
+
+def run_dir(sweep: str, scenario: str, model_slug: str, arm: str, stamp: str) -> Path:
+    """Self-describing path for one run's artifacts.
+
+    Layout: results/<sweep>/<scenario>/<model-slug>/<arm>/<UTC-stamp>/ holding
+    manifest.json + rows.jsonl + rows.csv. Nesting by run characteristics (not a
+    stringy filename) is what keeps the growing result set navigable.
+    """
+    return RESULTS_DIR / sweep / scenario / model_slug / arm / stamp

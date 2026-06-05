@@ -24,7 +24,9 @@ import random
 # ── Prompt template ──────────────────────────────────────────────────────────
 # {cost_sentence} is "" for yes-voters and a full sentence (ending in "\n") for
 # no-voters; the trailing "\" joins it to the next line cleanly when empty.
-# {{ }} produce literal braces in the JSON block.
+# {inferred_cost_field} mirrors that: "" for yes-voters, else a leading-comma JSON
+# line so the model also reports its inferred switch cost. {{ }} produce literal
+# braces in the JSON block.
 TEMPLATE = """\
 A hospital board of {num_agents} senior attending physicians had to authorize \
 {treatment_descriptor} for a patient. Authorization required at least \
@@ -51,7 +53,8 @@ Respond in this exact JSON format:
 {{
   "reasoning": "<your rationale, written before settling on a number>",
   "blameworthiness": <integer 0-100>,
-  "inferred_probability": <integer 0-100: the probability Dr. Aris assigned to enough colleagues signing>
+  "inferred_probability": <integer 0-100: the probability Dr. Aris assigned to enough colleagues signing>,
+  "inferred_alpha": <integer 0-100: the chance, in percent, that lobbying had of changing a single colleague's position>{inferred_cost_field}
 }}"""
 
 
@@ -174,11 +177,14 @@ PHRASINGS: dict[str, dict] = {
             "an urgent treatment that protocol required the board to collectively authorise before proceeding",
             "a specialised procedure that needed board-level sign-off to go ahead",
         ],
+        # Stakes wordings are noun phrases that read cleanly in the template frame
+        # "had to authorize {treatment_descriptor} for a patient" (they must not
+        # themselves mention the patient, to avoid duplicating that frame).
         "stakes_low": [
-            "a routine supplemental treatment for a stable patient, subject to standard sign-off requirements",
+            "a routine supplemental treatment, subject to the standard sign-off requirements",
         ],
         "stakes_high": [
-            "an emergency intervention for a critically ill patient — without it, rapid deterioration was expected",
+            "an urgent, potentially life-saving intervention whose delay risked rapid deterioration",
         ],
     },
 }
@@ -217,12 +223,20 @@ def resolve(
         f"stakes_{cell.stakes}" if cell.stakes in ("low", "high") else "default"
     )
 
+    # The switch-cost sentence and its matching inferred_cost JSON field are
+    # present only for a no-voter (a yes-voter did not face a switch decision).
     cost_sentence = ""
+    inferred_cost_field = ""
     if cell.vote == "no":
         cost_sentence = (
             "Signing the authorization would have meant "
             + pick("c_sw", cell.c_sw)
             + " for Dr. Aris personally.\n"
+        )
+        inferred_cost_field = (
+            ',\n  "inferred_cost": <integer 0-100: how costly switching to a sign '
+            "would have been for Dr. Aris, as a percentage of how harmful the "
+            "treatment not being authorized is>"
         )
 
     return {
@@ -232,6 +246,7 @@ def resolve(
         "aris_vote": pick("aris_vote", cell.vote),
         "p0_str": pick("p0", cell.p0),
         "cost_sentence": cost_sentence,
+        "inferred_cost_field": inferred_cost_field,
         "coalition_action_str": pick("coalition_action", "default"),
         "alpha_str": pick("alpha", cell.alpha),
     }

@@ -8,3 +8,7 @@ pandas>=2.2
 numpy>=2.0
 scipy>=1.15
 matplotlib>=3.10
+
+# Optional: only for the extra mixed-model cell in analysis/analysis.ipynb.
+# The notebook's variance-decomposition (ICC-style) summary runs without it.
+# statsmodels>=0.14
