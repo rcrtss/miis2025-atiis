@@ -34,9 +34,9 @@ MODELS: dict[str, str] = {
     "qwen":     "qwen/qwen3.6-35b-a3b",
 }
 
-# Scenario skins. s02/s03 are stubs until their scenario.py is implemented; the
-# driver skips them gracefully (NotImplementedError) so a partial grid still runs.
-ALL_SCENARIOS = ["s01_health", "s02_placeholder", "s03_placeholder"]
+# Scenario skins. All three are implemented; the driver still skips any scenario
+# that raises NotImplementedError, so a partial grid keeps running.
+ALL_SCENARIOS = ["s01_health", "s02_grant", "s03_board"]
 
 # Validation arms run on this scenario only (per the re-scoped design).
 VALIDATION_SCENARIOS = ["s01_health"]

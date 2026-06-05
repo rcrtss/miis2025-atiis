@@ -37,8 +37,9 @@ is a lighter design than six independent sweeps, and it directly answers a
 narrower but well-posed question: does the model behave, across these variables,
 as if it were reasoning with the framework?
 
-Full independent sweeps over these variables, additional scenario skins, and
-other parameters are described under Deferred Work at the end.
+Full independent sweeps over these variables, extending the validation arms
+across all scenario skins, and other parameters are described under Deferred Work
+at the end.
 
 ## The Formal Oracle
 
@@ -69,16 +70,28 @@ straight through without extra handling.
 
 ## Scenario Skins
 
-All prompts follow a committee skeleton that is structurally isomorphic to the
-formal example but differs in surface content. Running more than one skin checks
-whether findings generalize across narratives.
+All three prompts follow a committee skeleton that is structurally isomorphic to
+the formal example and is held identical in structure, spacing, and elicitation;
+only the surface narrative differs. The headline p0 sweep runs on all three so
+that a stable curve across them is evidence that structure-tracking is robust to
+narrative rather than an artifact of one story. The three skins were chosen as a
+narrative-invariance control with one deliberate affect contrast:
 
-- Scenario A (implemented): a hospital board of seven attending physicians must
-  authorize a treatment. Authorization needs at least four sign-offs. The board
-  fell short and the treatment was not administered. The reader evaluates the
-  blame of one physician.
-- Scenario B and C (deferred): additional skins (for example a grant committee)
-  in a different surface domain, exposing the same interface.
+- Scenario A, s01_health (weighty, identified victim): a hospital board of seven
+  attending physicians must authorize a treatment. Authorization needs at least
+  four sign-offs. The board fell short and the treatment was not administered.
+  The reader evaluates the blame of one physician.
+- Scenario B, s02_grant (weighty, statistical victim): a scientific review panel
+  must fund a proposal that is the only viable path toward a treatment for a
+  serious unmet need. Funding needs at least four fundable scores. The panel fell
+  short and the grant was not awarded. Same moral gravity as Scenario A, a
+  different narrative and a diffuse rather than identified victim.
+- Scenario C, s03_board (cold, no human victim): a corporate board must authorize
+  a major financial commitment. Authorization needs at least four votes in favor.
+  The board fell short and the commitment was not authorized. Deliberately
+  low-affect with a purely financial consequence, so it doubles as a stakes and
+  affect contrast: if the p0 curve holds here too, structure-tracking is robust
+  to affective load as well as narrative.
 
 ## Number-Free Prompts
 
@@ -287,6 +300,8 @@ remain the natural extensions if the p0 results show clear structure.
 - The cost of collective coordination (the pressure cost) as a distinct sweep,
   testing whether cost sensitivity extends from individual sacrifice to
   coordination overhead.
-- Additional scenario skins (B and C) for the validation arms, to control wording
-  and narrative effects.
+- Extending the validation arms to Scenarios B and C. The three skins all run for
+  the headline p0 sweep, but the OFAT validation arms currently run on Scenario A
+  only; running them across all skins would control wording and narrative effects
+  on the arm results too.
 - Cross-linguistic replication.

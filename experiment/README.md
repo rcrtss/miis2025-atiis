@@ -19,9 +19,9 @@ experiment/
 │   ├── client.py        OpenRouter over httpx (no SDK) + retry + JSON validation
 │   └── runner.py        runs ONE arm -> one self-describing run directory
 ├── prompts/             scenario CONTENT only (one per domain)
-│   ├── s01_health/       hospital authorization (implemented)
-│   ├── s02_placeholder/  TBD
-│   └── s03_placeholder/  TBD
+│   ├── s01_health/       hospital authorization (weighty, identified victim)
+│   ├── s02_grant/         grant-review panel (weighty, statistical victim)
+│   └── s03_board/         corporate board (cold, no human victim)
 ├── sweeps/
 │   └── sweep1_p0.py     the file you edit per run (model, reps, levels, ARMS)
 ├── run.py              grid/OFAT driver: models x scenarios x arms in one command
