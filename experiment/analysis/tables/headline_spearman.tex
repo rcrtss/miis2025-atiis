@@ -1,0 +1,15 @@
+\begin{tabular}{llrrrrrrr}
+\toprule
+model & scenario & n & spearman_ref & ci_lo & ci_hi & p & spearman_inferred & p_bh \\
+\midrule
+gemini-2.5-flash & s01_health & 210 & 0.260 & 0.128 & 0.399 & 0.000 & 0.194 & 0.000 \\
+gemini-2.5-flash & s02_grant & 210 & 0.165 & 0.020 & 0.309 & 0.017 & 0.231 & 0.019 \\
+gemini-2.5-flash & s03_board & 210 & 0.104 & -0.040 & 0.239 & 0.134 & -0.038 & 0.134 \\
+llama-3.3-70b-instruct & s01_health & 210 & 0.279 & 0.149 & 0.401 & 0.000 & 0.202 & 0.000 \\
+llama-3.3-70b-instruct & s02_grant & 210 & 0.258 & 0.118 & 0.389 & 0.000 & 0.227 & 0.000 \\
+llama-3.3-70b-instruct & s03_board & 210 & 0.239 & 0.104 & 0.368 & 0.000 & 0.136 & 0.001 \\
+qwen3-235b-a22b-2507 & s01_health & 210 & 0.531 & 0.422 & 0.630 & 0.000 & 0.387 & 0.000 \\
+qwen3-235b-a22b-2507 & s02_grant & 210 & 0.176 & 0.034 & 0.307 & 0.011 & 0.228 & 0.014 \\
+qwen3-235b-a22b-2507 & s03_board & 210 & 0.358 & 0.231 & 0.477 & 0.000 & 0.146 & 0.000 \\
+\bottomrule
+\end{tabular}

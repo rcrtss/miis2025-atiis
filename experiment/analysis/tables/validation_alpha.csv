@@ -1,0 +1,3 @@
+model,arm,llm_peak_base,llm_peak_arm,oracle_peak_base,oracle_peak_arm,mwu_p,spearman_inferred,mwu_p_bh
+qwen3-235b-a22b-2507,alpha_negligible,2,3,2,3,8.593903759137015e-06,0.4876282576248343,8.593903759137015e-06
+qwen3-235b-a22b-2507,alpha_strong,2,1,2,1,9.083416908245546e-14,0.5514887034985113,1.816683381649109e-13
