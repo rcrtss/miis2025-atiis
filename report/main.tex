@@ -1,0 +1,122 @@
+\documentclass{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{setspace}
+\usepackage[
+  backend=biber,
+  style=numeric,
+  citestyle=numeric-comp,
+  sorting=none,
+  maxbibnames=10,
+  giveninits=true,
+  uniquename=init,
+  doi=true,
+  url=true,
+  isbn=false,
+  eprint=false
+]{biblatex}
+\addbibresource{report.bib}
+
+\usepackage[dvipsnames,svgnames,x11names]{xcolor}
+\usepackage[
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black,
+  pdftitle={Advanced Topics in Intelligent Interactive Systems Report: An Empirical Study of Blameworthiness in LLM-based Multi-agent Settings},
+  pdfauthor={Rodrigo Cort\'es S\'anchez}
+]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+\usepackage{caption}
+\captionsetup{font=small, labelfont=bf, skip=6pt}
+
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0.5em}
+
+\title{An Empirical Study of LLM-based Blameworthiness Apportionment in Multi-agent Settings\\
+  \large Advanced Topics in Intelligent Interactive Systems \\
+  \large Independent Studies Report}
+\author{Rodrigo Cort\'es S\'anchez}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  % Briefly state the motivation, approach, key findings, and significance.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%-----------------------------
+
+\section{Introduction}
+
+%-----------------------------
+
+\section{Related Work}
+
+\subsection{Personal Health Data from Wearables and Medical Records}
+
+Wearable devices offer users a variety of physiological and behavioral metrics, including heart rate, physical activity, and sleep patterns \cite{friedenberg_blameworthiness_2019}
+
+%-----------------------------
+
+\section{Methodology}
+
+\subsection{Context and Scope}
+
+\subsection{Evaluation Design}
+
+% DS1 and DS2 not compositional, done independently for such and such reasons (e.g., DS.2 requires prior scaffolding and infrastructure for code execution, which depends on DS1 outputs)
+
+\subsubsection{Large Language Model Selection for Analysis}
+
+% Justify mid-size models (why not the best available?)
+% Table of models, versions and main parameters
+
+\section{Results}
+
+\subsection{Data Layer}
+
+\section{Discussion}
+
+\subsection{Agent Performance Analysis}
+
+% Per model: Which is the best DS Agent (refined loop)? Stats
+
+\section{Limitations}
+
+\subsection{DS.2 Dimension Definition}
+
+% Overlap, can be best defined
+
+\section{Conclusions and Future Work}
+
+% What was replicated and demonstrated
+% Future Work
+% - Other Agents and Orchestrator
+% - Improvements of baseline and prompt variation for both
+
+% - LLM-Judge validation
+% - Interpretation layer (of DS results)
+% - Test Authorship expert validation
+% - More queries and more test suites
+% - End-to-end tests (A/B test) and comparison against these results
+% - Test with original Schema from Synth Data
+% - Topology of query types for more comprehensive tests
+% Closing
+
+\newpage
+
+\printbibliography
+
+\end{document}

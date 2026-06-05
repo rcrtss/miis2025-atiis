@@ -1,0 +1,104 @@
+Methods
+
+  M1 — Context & scope (thin — motivation only)
+  - The paper's DS Agent: three-stage design and why LLM code-gen over messy health data is hard → docs/prompts/ds-agent/README.md
+  - One-line positioning within the (out-of-scope) MAS → brief pointer to docs/architecture/system-overview.md
+  - Scope statement: DS Agent only; orchestrator/DE/HC deferred to Future Work
+  - Prompt fidelity: extracted verbatim from the paper → docs/prompts/ds-agent/{01-approach-generation,02-code-generation,03-code-debug}.md, loaded via src/agents/prompts.py
+
+  M2 — Data layer (the substrate the DS Agent is tested on)
+  - M2.1 Why real data over synthesis (the pivot) → data/DESIGN.md "Framing"
+  - M2.2 LifeSnaps → schema mapping, per-DataFrame derivation → data/DESIGN.md "LifeSnaps → schema mapping", data/pipeline.ipynb, BSON sleep-stage cache
+  - M2.3 Runtime (DELTA) schema vs. paper schema → data/data_schemas/*.json + DELTA.md; contrast docs/data-schemas/
+  - M2.4 "Emit-as-is" + real-world properties preserved → data/DESIGN.md "Real-world properties preserved" (non-wear days, mixed-mode sleep, sparse activity/HRV/stress, per-persona date
+  anchors)
+  - M2.5 Persona output contract → data/DESIGN.md "Pipeline output contract", data/users/pN/, data/users/MAPPING.csv
+  - M2.6 Config-driven synthetic generator (introduced here; consumed in M4.5) → data/config-driven-generation/ (config.yaml, generators/, validation/, correlation/AR(1)/retry in README.md),
+  cohort_spec.json
+
+  M3 — DS Agent implementation
+  - M3.1 Three-stage pipeline: plan → code → debug-loop → DSAgent.generate_plan / generate_code / debug_code, ds_agent_main (src/agents/datascience/agent.py)
+  - M3.2 Data-summary injection → DSAgent._get_summary_statistics
+  - M3.3 Sandboxed execution → src/agents/datascience/sandbox/{sandbox.py,_deno.py,README.md}
+  - M3.4 Model-agnostic LLM routing + the 5 models → src/agents/dify.py (ALLOWED_MODELS, call_dify_api)
+  - M3.5 Data access layer → src/agents/user_data.py
+
+  M4 — Evaluation design (paper's two-task split; lead with evaluation/datascience/EVALUATION.md)
+  - M4.1 DS.1 — plan generation: 25-item / 5-topic rubric → evaluation/datascience/ds1/ (rubric.json, prompt.txt, questions.txt, evaluator.py, run_evaluation.py)
+    - M4.1.1 Points-deducted scoring (ceiling 18 / deductible 16) + Guard-Clause addition → EVALUATION.md "Scoring Methodology"
+    - M4.1.2 LLM-judge w/ structured outputs; fair baseline-vs-DS comparison
+  - M4.2 DS.2 — code generation: generation → evaluation handoff → contracts ds2/contracts/{test_suites,generation,evaluation}.md
+    - M4.2.1 Unit of evaluation = (query, persona) pair
+    - M4.2.2 Three agent conditions: baseline / ds_oneshot / ds_refined → EVALUATION.md "Important notes"
+    - M4.2.3 Five dimensions (CE/DH/GP/OC + locally-added SM); synthetic-fixture-vs-real-data rationale → EVALUATION.md "Dimensions for tests"; ds2/test_suites/run_*/tests/test_analysis.py
+    - M4.2.4 Docker sandbox runner + code_runs semantics → ds2/run_evaluation/{evaluation.py,sandbox_runner.py,Dockerfile}
+    - M4.2.5 Test-suite authorship (Sonnet-generated, author-reviewed) → ds2/test_suites/PROMPTS.md
+    - M4.2.6 Multi-model protocol (one generation.json per model) → EVALUATION.md "Running across multiple agent models"
+    - M4.2.7 Aggregation: Views A–D + McNemar setup → EVALUATION.md "Aggregation Views" + "McNemar paired tests"
+  - M4.3 DS.2 external-validity study — design (method for the R4 block; reads as an extension of M4.2, not a third task)
+    - Open with the bounded surface: only SM + runnable-rate consume persona data; CE/DH/GP/OC are real↔synthetic-identical by construction → memory's mechanical nuance
+    - Swap mechanism: --persona-root in evaluation.py, code held fixed (pure data ablation)
+    - Invariance protocol: rank preservation + per-(model,agent) McNemar on SM verdicts → EVALUATION.md "McNemar paired tests"
+
+  ---
+  Results
+
+  R1 — Data layer outputs (descriptive)
+  - 71-persona cohort: coverage stats, documented messiness → data/users/, data/datasets/*/eda.ipynb
+  - Synthetic cohort parity (age/gender/n_days match) → data/config-driven-generation/data/out/synthetic_users/
+
+  R2 — DS.1 plan generation
+  - Per-topic + overall, DS Agent vs. baseline, 5 models → results/ds1/ds1_*.json, results/ds1/analysis.ipynb
+
+  R3 — DS.2 code generation (lead View D radar, View B alongside)
+  - R3.1 Per-dimension radars (3 agents × 5 dims) → results/ds2/analysis.ipynb
+  - R3.2 Import-failure / runnability story (entries/gen_fail/import_fail/runnable) — Baseline 10/32 vs DS 1/32
+  - R3.3 SM as ground-truth oracle
+  - R3.4 ds_refined vs ds_oneshot vs baseline ranking
+  - R3.5 Cross-model breakdown → results/ds2/20260527*/, 20260528T092319Z/
+
+  R4 — DS.2 external validity: does the benchmark depend on LifeSnaps? (named block immediately after R3; same chapter)
+  - R4.0 First paragraph = the bound: restate that only SM + runnable-rate can move; everything else is invariant by construction (preempts the triviality objection)
+  - R4.1 Rank/conclusion invariance across all 5 models (Refined≺OneShot≺Baseline preserved)
+  - R4.2 SM McNemar paired tests (all n.s.; b≈c) + per-agent shift magnitudes
+  - R4.3 Runnable-rate data-independence + gpt5nano artifact caveat
+  - R4.4 Divergence map (windowed/sufficiency queries: 9_1, 16_1, 18_1, 22_1)
+  - → results/ds2/analysis_synthetic_vs_real.ipynb, synthetic runs results/ds2/synthetic/2026*
+
+  ---
+  Discussion
+
+  - D1 — DS.1 vs DS.2: plan quality vs. executable correctness; why they're not compositional → EVALUATION.md limitations
+  - D2 — The import-failure gap: DS architecture's robustness payoff (plan + summary + debug-loop)
+  - D3 — Per-dimension failure-mode reading (CE-vs-OC boundary; GP non-functional concerns) → EVALUATION.md "Rationale for dimension selection"
+  - D4 — External validity (interprets R4): the defensible narrow claim — the data-dependent surface of DS.2 is invariant real↔synthetic → benchmark not chained to LifeSnaps; explicitly
+  state what this does not claim (no statement about the by-construction dimensions)
+
+  ---
+  Limitations
+
+  - L1 — Data layer: LifeSnaps is a convenience sample; population_df = cohort not population; only 2 age bands; mid-percentiles only; no anthropometrics/bed-times; synthetic generator's
+  AR(1)+mixing correlation structure is a simplification → data/DESIGN.md "Limitations"
+  - L2 — DS.1 measurement: LLM-judge unvalidated (no inter-annotator agreement, no judge-accuracy check); rubric item subjectivity; single judge model → EVALUATION.md DS.1 limitations
+  - L3 — DS.2 measurement: single-run stochasticity (one generation per (query,persona)); Sonnet-authored test suites, author-reviewed but not expert-authored (vs. paper's 7 data
+  scientists).
+  - L4 — DS.2 dimension definitions: paper gives no formal dimension definitions or selection rationale, so CE/DH/GP/OC boundaries were operationalized here; residual risk in boundary cases
+  (CE-vs-OC) and unvalidated dimension selection (the formalization itself is a contribution → lives in M4.2.3; only the residual risk is the limitation)
+  - L5 — Fidelity to the paper: DELTA schema divergence from paper schema; Approach-vs-Docstring resolution decision; ds_refined treated identically to ds_oneshot by the evaluator →
+  EVALUATION.md "Important notes", data/data_schemas/DELTA.md
+
+
+  ---
+  Conclusions & Future Work
+
+  - C1 — What was replicated and demonstrated (DS Agent end-to-end + DS.1/DS.2 + the external-validity finding)
+  - C2 — Future work:
+    - The rest of the PHA system: orchestrator (incl. reflection), DE Agent, HC Agent → docs/prompts/{orchestrator,de-agent,hc-agent}/, docs/architecture/, Dify scaffolding dify-workflows/
+  (where the rescoped-out work lands)
+    - Multi-run pass-rate averaging for DS.2 (single-run limitation)
+    - LLM-judge validation for DS.1 (single-judge limitation)
+    - Test-suite authorship by experts (vs. Sonnet-generated + author-reviewed) and expanded test suite coverage (vs. 32 tests) for DS.2
+    - Synth data with original schema (vs. DELTA) for DS.2 external-validity study (current synthetic generator is config-driven but schema-agnostic; schema-specific generation would be more rigorous)
+    - Regenerate-on-synthetic second experiment (full pipeline incl. data summaries)
+    - Per-error-type / per-question DS.2 aggregation (needs expert test authorship)
+  - C3 — Closing: portability/privacy argument for config-driven synthetic data as a reproducible benchmark substrate
