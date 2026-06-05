@@ -28,7 +28,7 @@ P0_LEVEL_ORDER = [
 # Manifest fields promoted onto every row (run-level metadata for grouping).
 _MANIFEST_COLS = [
     "run_id", "sweep_var", "temperature", "reps", "seed", "code_version",
-    "n_calls", "n_errors", "started_utc",
+    "status", "n_planned", "n_calls", "n_done", "n_errors", "started_utc",
 ]
 
 
@@ -57,12 +57,14 @@ def _load_one(manifest_path: Path) -> pd.DataFrame | None:
 
 
 def load_runs(results_dir: Path | str = RESULTS_DIR, *, sweep: str | None = None,
-              drop_errors: bool = True) -> pd.DataFrame:
+              drop_errors: bool = True, complete_only: bool = False) -> pd.DataFrame:
     """Load all runs into one tidy long DataFrame.
 
     `sweep` restricts to one sweep subtree (e.g. "sweep1_p0"). `drop_errors`
-    removes calls that failed (non-null `error`); the manifest's `n_errors`
-    still records how many there were.
+    removes calls that failed (non-null `error`); the manifest's `n_errors` still
+    records how many there were. `complete_only` keeps only runs whose manifest
+    `status` is "complete" (use this for the report so a half-finished resume does
+    not silently bias an analysis; the run's own `status` column is always kept).
     """
     root = Path(results_dir)
     base = root / sweep if sweep else root
@@ -71,6 +73,8 @@ def load_runs(results_dir: Path | str = RESULTS_DIR, *, sweep: str | None = None
         raise FileNotFoundError(f"no runs with rows.csv found under {base}")
 
     df = pd.concat(frames, ignore_index=True)
+    if complete_only and "status" in df.columns:
+        df = df[df["status"] == "complete"].copy()
     if drop_errors and "error" in df.columns:
         df = df[df["error"].isna()].copy()
 

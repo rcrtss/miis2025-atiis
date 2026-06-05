@@ -18,11 +18,14 @@ ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = ROOT / "results"
 
 
-def run_dir(sweep: str, scenario: str, model_slug: str, arm: str, stamp: str) -> Path:
+def run_dir(sweep: str, scenario: str, model_slug: str, arm: str) -> Path:
     """Self-describing path for one run's artifacts.
 
-    Layout: results/<sweep>/<scenario>/<model-slug>/<arm>/<UTC-stamp>/ holding
-    manifest.json + rows.jsonl + rows.csv. Nesting by run characteristics (not a
-    stringy filename) is what keeps the growing result set navigable.
+    Layout: results/<sweep>/<scenario>/<model-slug>/<arm>/ holding manifest.json
+    + rows.jsonl + rows.csv. The path is STABLE per (sweep, scenario, model, arm)
+    with no per-run timestamp, so an interrupted run resumes into the same place
+    instead of starting a fresh empty directory. Run timestamps live inside
+    manifest.json. Nesting by run characteristics (not a stringy filename) is what
+    keeps the growing result set navigable.
     """
-    return RESULTS_DIR / sweep / scenario / model_slug / arm / stamp
+    return RESULTS_DIR / sweep / scenario / model_slug / arm

@@ -23,9 +23,9 @@ from engine.params import Arm
 
 # ── Run knobs ─────────────────────────────────────────────────────────────────
 SCENARIO    = "s01_health"
-MODEL       = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free"   # OpenRouter model id
+MODEL       = "google/gemini-2.5-flash"      # OpenRouter model id (single-arm default)
 TEMPERATURE = 1.0
-REPS        = 15                              # repetitions per (level × phrasing)
+REPS        = 10                              # repetitions per (level × phrasing)
 SEED        = 0                               # reproducible nuisance sampling
 
 # ── What this sweep varies ──────────────────────────────────────────────────
@@ -79,9 +79,21 @@ if __name__ == "__main__":
                     help="cap the number of API calls (live debugging)")
     args = ap.parse_args()
 
-    runner.run(
-        sys.modules[__name__],
-        arm=ARMS_BY_NAME[args.arm],
-        dry_run=args.dry,
-        limit=args.limit,
-    )
+    cfg = sys.modules[__name__]
+    arm = ARMS_BY_NAME[args.arm]
+
+    if args.dry:
+        runner.run(cfg, arm=arm, dry_run=True, limit=args.limit)
+        sys.exit(0)
+
+    from tqdm.auto import tqdm
+    total = runner.count_planned(cfg, arm=arm, scenario=SCENARIO, limit=args.limit)
+    bar = tqdm(total=total, unit="call", desc=f"{SCENARIO}/{arm.name}", smoothing=0.05)
+    try:
+        runner.run(cfg, arm=arm, limit=args.limit,
+                   on_progress=bar.update, verbose=False)
+    except KeyboardInterrupt:
+        bar.close()
+        print("\ninterrupted. progress is saved; re-run to resume.")
+        sys.exit(130)
+    bar.close()

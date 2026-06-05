@@ -24,9 +24,10 @@ experiment/
 │   └── s03_board/         corporate board (cold, no human victim)
 ├── sweeps/
 │   └── sweep1_p0.py     the file you edit per run (model, reps, levels, ARMS)
-├── run.py              grid/OFAT driver: models x scenarios x arms in one command
-├── results/            one dir per run; flat legacy files under results/_legacy/
-│   └── sweep1_p0/s01_health/<model>/<arm>/<UTC-stamp>/
+├── run.py              grid/OFAT driver: models x scenarios x arms, with a
+│                       progress bar and resume-on-cancel
+├── results/            one stable dir per run; flat legacy files under results/_legacy/
+│   └── sweep1_p0/s01_health/<model>/<arm>/
 │           manifest.json  rows.jsonl  rows.csv
 └── analysis/
     ├── loader.py        globs manifests into one tidy DataFrame
@@ -61,9 +62,18 @@ python -m run --headline --validation         # both (shared baseline x s01 runs
 python -m run --validation --models nemotron --limit 5   # quick live smoke
 ```
 
-Each run writes `results/<sweep>/<scenario>/<model>/<arm>/<UTC-stamp>/` with a
-`manifest.json` (the full run config plus the oracle constants in force),
-`rows.jsonl` (full log), and `rows.csv` (tidy). Then open `analysis/analysis.ipynb`.
+Each run writes a stable `results/<sweep>/<scenario>/<model>/<arm>/` directory
+with a `manifest.json` (full run config + oracle constants + `status`),
+`rows.jsonl` (append-only per-call log), and `rows.csv` (tidy). Then open
+`analysis/analysis.ipynb`.
+
+**Progress and resume.** `run.py` shows a single progress bar over all planned
+calls across the grid. Results stream to `rows.jsonl` as they complete, so if you
+cancel (Ctrl-C) or the run dies, nothing is lost: re-run the exact same command
+and it skips the calls already done, retries any that errored, and continues. The
+stable (timestamp-free) directory is what makes this work; run timestamps and
+completion `status` live inside `manifest.json`. For the report, load with
+`load_runs(complete_only=True)` to exclude any half-finished run.
 
 ## Design notes baked into the code
 

@@ -1,14 +1,20 @@
-"""Generic sweep runner.
+"""Generic sweep runner (resumable).
 
 Reads a sweep-config module (see `sweeps/sweep1_p0.py`) and runs ONE arm of it
 (the baseline by default, or an OFAT validation arm passed by the driver). It
 expands every level x phrasing x repetition, calls the model, attaches both
 oracle comparisons, and writes a self-describing run directory:
 
-    results/<sweep>/<scenario>/<model-slug>/<arm>/<UTC-stamp>/
-        manifest.json   full run characteristics + oracle constants in force
-        rows.jsonl      full per-call log
-        rows.csv        tidy columns for analysis
+    results/<sweep>/<scenario>/<model-slug>/<arm>/
+        manifest.json   full run characteristics + oracle constants + status
+        rows.jsonl      append-only per-call log (the durable record)
+        rows.csv        tidy columns for analysis (rebuilt at each checkpoint)
+
+The directory is STABLE per (sweep, scenario, model, arm): there is no per-run
+timestamp in the path. That is what makes runs resumable. If a run is cancelled
+(Ctrl-C) or dies, the calls already streamed to `rows.jsonl` survive; re-running
+the same command reloads them, skips the completed calls, retries the failed or
+missing ones, and continues. Timestamps live inside `manifest.json` instead.
 
 The runner knows nothing about any particular scenario or parameter; it only
 follows `cfg.SWEEP_VAR` and the arm's overrides.
@@ -23,6 +29,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from types import ModuleType
+from typing import Callable
 
 import pandas as pd
 
@@ -35,6 +42,17 @@ _CSV_COLUMNS = [
     "blameworthiness", "inferred_probability", "inferred_alpha", "inferred_cost",
     "oracle_at_reference", "oracle_at_inferred", "error",
 ]
+
+# How many freshly executed calls between checkpoint rewrites of rows.csv +
+# manifest.json. The jsonl is written per-call regardless, so a smaller number
+# only buys a fresher derived CSV at the cost of more rewrites.
+CHECKPOINT_EVERY = 20
+
+ProgressFn = Callable[[int], None]
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
 def _append_jsonl(path: Path, row: dict) -> None:
@@ -54,12 +72,75 @@ def _code_version() -> str | None:
         return None
 
 
-def _manifest(cfg: ModuleType, *, sweep: str, scenario: str, model: str,
-              arm: Arm, stamp: str) -> dict:
-    """Snapshot every run characteristic, including the oracle constants in
-    force, so a result is reproducible from its own directory alone."""
+def _load_ready_scenario(scenario: str) -> ModuleType:
+    """Import a scenario module, raising NotImplementedError if it is a stub
+    (empty TEMPLATE/PHRASINGS) so the driver can skip rather than crash later."""
+    mod = importlib.import_module(f"prompts.{scenario}.scenario")
+    if not getattr(mod, "TEMPLATE", "") or not getattr(mod, "PHRASINGS", {}):
+        raise NotImplementedError(f"scenario '{scenario}' is not implemented")
+    return mod
+
+
+def _plan(cfg: ModuleType, scenario_mod: ModuleType, arm: Arm,
+          limit: int | None) -> list[tuple]:
+    """Flatten the whole arm into an ordered list of planned calls.
+
+    Each item is (level, cell, oracle_ref, phrasing_idx, rep, run_id). Flattening
+    (rather than nested loops) makes `limit` a clean slice and gives the driver an
+    exact total for the progress bar.
+    """
+    items: list[tuple] = []
+    for level in cfg.LEVELS:
+        cell = Cell(**{**cfg.HELD, **arm.overrides, cfg.SWEEP_VAR: level})
+        oracle_ref = oracle.oracle_blame(cell)
+        n_phrasings = len(scenario_mod.PHRASINGS[cfg.SWEEP_VAR][level])
+        for phrasing_idx in range(n_phrasings):
+            for rep in range(cfg.REPS):
+                run_id = f"{arm.name}-{level}-{phrasing_idx}-{rep}"
+                items.append((level, cell, oracle_ref, phrasing_idx, rep, run_id))
+    if limit is not None:
+        items = items[:limit]
+    return items
+
+
+def count_planned(cfg: ModuleType, *, arm: Arm, scenario: str,
+                  limit: int | None = None) -> int:
+    """Number of calls one arm would make. Returns 0 for stub scenarios so the
+    driver can total the grid without crashing on not-yet-implemented skins."""
+    try:
+        scenario_mod = _load_ready_scenario(scenario)
+    except NotImplementedError:
+        return 0
+    return len(_plan(cfg, scenario_mod, arm, limit))
+
+
+def _load_existing(raw_path: Path) -> dict[str, dict]:
+    """Reload a prior (possibly interrupted) run's rows from its jsonl, keyed by
+    run_id, last write wins. A partial final line from a crash is skipped."""
+    merged: dict[str, dict] = {}
+    if not raw_path.exists():
+        return merged
+    with open(raw_path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue  # truncated last line from an abrupt kill
+            rid = row.get("run_id")
+            if rid is not None:
+                merged[rid] = row
+    return merged
+
+
+def _manifest_base(cfg: ModuleType, *, sweep: str, scenario: str, model: str,
+                   arm: Arm, started: str) -> dict:
+    """Static run characteristics, including the oracle constants in force, so a
+    result is reproducible from its own directory alone."""
     return {
-        "run_id": stamp,
+        "run_id": f"{sweep}/{scenario}/{model.split('/')[-1]}/{arm.name}",
         "sweep": sweep,
         "sweep_var": cfg.SWEEP_VAR,
         "scenario": scenario,
@@ -81,8 +162,34 @@ def _manifest(cfg: ModuleType, *, sweep: str, scenario: str, model: str,
             "alpha_reference": dict(oracle.ALPHA_REFERENCE),
         },
         "code_version": _code_version(),
-        "started_utc": stamp,
+        "started_utc": started,
     }
+
+
+def _write_checkpoint(out_dir: Path, plan: list[tuple], merged: dict[str, dict],
+                      base: dict, *, status: str) -> None:
+    """Rebuild rows.csv from the merged rows (in plan order) and write manifest
+    with the current status and counts. Safe to call repeatedly."""
+    ordered = [merged[rid] for *_, rid in plan if rid in merged]
+    df = pd.DataFrame(ordered)
+    for col in _CSV_COLUMNS:           # guarantee columns even on an empty run
+        if col not in df.columns:
+            df[col] = None
+    df[_CSV_COLUMNS].to_csv(out_dir / "rows.csv", index=False)
+
+    n_attempted = len(ordered)
+    n_errors = int(sum(1 for r in ordered if r.get("error") is not None))
+    manifest = dict(base)
+    manifest.update({
+        "status": status,                 # in_progress | interrupted | complete
+        "updated_utc": _now(),
+        "n_planned": len(plan),
+        "n_calls": n_attempted,
+        "n_done": n_attempted - n_errors,
+        "n_errors": n_errors,
+    })
+    with open(out_dir / "manifest.json", "w", encoding="utf-8") as fh:
+        json.dump(manifest, fh, ensure_ascii=False, indent=2)
 
 
 def run(
@@ -93,130 +200,134 @@ def run(
     model: str | None = None,
     dry_run: bool = False,
     limit: int | None = None,
-) -> str:
-    """Execute one arm of the sweep `cfg`. Returns the run directory path.
+    on_progress: ProgressFn | None = None,
+    verbose: bool = True,
+) -> str | None:
+    """Execute one arm of the sweep `cfg`, resuming any prior partial run.
 
     `arm`, `scenario`, `model` override the sweep defaults (the driver supplies
-    them when expanding the grid); omitted, they fall back to the baseline arm
-    and the sweep's own SCENARIO/MODEL.
+    them when expanding the grid). `on_progress(n)` is called once per planned
+    call (whether skipped-as-already-done or freshly executed) so a caller can
+    drive a global progress bar. `verbose` prints a per-run summary; the driver
+    sets it False and reports via the bar. Returns the run directory path (None
+    for a dry run, which writes nothing).
     """
     arm = arm if arm is not None else Arm("baseline", {})
     scenario = scenario if scenario is not None else cfg.SCENARIO
     model = model if model is not None else cfg.MODEL
 
-    scenario_mod = importlib.import_module(f"prompts.{scenario}.scenario")
-    # Placeholder scenarios ship an empty TEMPLATE/PHRASINGS; surface that as a
-    # clean NotImplementedError so the driver can skip rather than crash later.
-    if not getattr(scenario_mod, "TEMPLATE", "") or not getattr(scenario_mod, "PHRASINGS", {}):
-        raise NotImplementedError(f"scenario '{scenario}' is not implemented")
-    rng = random.Random(cfg.SEED)
-
-    # When launched via `python -m`, cfg.__name__ is "__main__"; use the filename.
+    scenario_mod = _load_ready_scenario(scenario)   # raises for stub scenarios
     sweep_name = Path(getattr(cfg, "__file__", cfg.__name__)).stem
     model_slug = model.split("/")[-1]
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    plan = _plan(cfg, scenario_mod, arm, limit)
 
-    out_dir = config.run_dir(sweep_name, scenario, model_slug, arm.name, stamp)
+    # ── Dry run: render + oracle only, no writes, no API key ──────────────────
+    if dry_run:
+        if on_progress:
+            on_progress(len(plan))
+        if verbose and plan:
+            level, cell, _ref, phrasing_idx, _rep, _rid = plan[0]
+            rng = random.Random(f"{cfg.SEED}-{plan[0][5]}")
+            prompt = scenario_mod.render(
+                cell, rng, swept_field=cfg.SWEEP_VAR, swept_idx=phrasing_idx,
+                fix_nuisance=cfg.FIX_NUISANCE_WORDING,
+            )
+            print(f"\nDRY RUN: [{arm.name}] {scenario} @ {model}  "
+                  f"({len(plan)} planned calls, nothing written)")
+            print(f"\n=== SAMPLE RENDERED PROMPT (level={level}, "
+                  f"phrasing_idx={phrasing_idx}) ===\n")
+            print(prompt)
+            print("\n=== ORACLE (reference values) BY LEVEL ===")
+            for lvl in cfg.LEVELS:
+                c = Cell(**{**cfg.HELD, **arm.overrides, cfg.SWEEP_VAR: lvl})
+                print(f"  {lvl:<14} db = {oracle.oracle_blame(c):.4f}")
+        return None
+
+    # ── Live run: resumable ───────────────────────────────────────────────────
+    out_dir = config.run_dir(sweep_name, scenario, model_slug, arm.name)
     out_dir.mkdir(parents=True, exist_ok=True)
     raw_path = out_dir / "rows.jsonl"
 
-    rows: list[dict] = []
-    n_calls = 0
+    merged = _load_existing(raw_path)
+    started = merged.get(next(iter(merged), None), {}).get("started_utc") or _now()
+    base = _manifest_base(cfg, sweep=sweep_name, scenario=scenario, model=model,
+                          arm=arm, started=started)
 
-    for level in cfg.LEVELS:
-        cell = Cell(**{**cfg.HELD, **arm.overrides, cfg.SWEEP_VAR: level})
-        oracle_ref = oracle.oracle_blame(cell)
-        n_phrasings = len(scenario_mod.PHRASINGS[cfg.SWEEP_VAR][level])
+    def is_done(rid: str) -> bool:
+        r = merged.get(rid)
+        return (r is not None and r.get("error") is None
+                and r.get("blameworthiness") is not None)
 
-        for phrasing_idx in range(n_phrasings):
-            for rep in range(cfg.REPS):
-                if limit is not None and n_calls >= limit:
-                    break
+    new_since_ckpt = 0
+    n_skipped = 0
+    try:
+        for level, cell, oracle_ref, phrasing_idx, rep, run_id in plan:
+            if is_done(run_id):
+                n_skipped += 1
+                if on_progress:
+                    on_progress(1)
+                continue
 
-                prompt = scenario_mod.render(
-                    cell, rng,
-                    swept_field=cfg.SWEEP_VAR,
-                    swept_idx=phrasing_idx,
-                    fix_nuisance=cfg.FIX_NUISANCE_WORDING,
+            # Per-call deterministic RNG so resume is exact regardless of which
+            # calls were already done (matters only when nuisance wording is free).
+            rng = random.Random(f"{cfg.SEED}-{run_id}")
+            prompt = scenario_mod.render(
+                cell, rng, swept_field=cfg.SWEEP_VAR, swept_idx=phrasing_idx,
+                fix_nuisance=cfg.FIX_NUISANCE_WORDING,
+            )
+
+            row: dict = {
+                "run_id": run_id, "sweep": sweep_name, "scenario": scenario,
+                "model": model, "arm": arm.name, "level": level,
+                "phrasing_idx": phrasing_idx, "rep": rep, "prompt": prompt,
+                "oracle_at_reference": oracle_ref, "oracle_at_inferred": None,
+                "reasoning": None, "blameworthiness": None,
+                "inferred_probability": None, "inferred_alpha": None,
+                "inferred_cost": None, "latency": None, "raw": None,
+                "error": None, "started_utc": started,
+            }
+
+            from engine import client  # lazy: --dry needs no API key
+            try:
+                resp = client.call_model(prompt, model=model,
+                                         temperature=cfg.TEMPERATURE)
+                row["reasoning"] = resp["reasoning"]
+                row["blameworthiness"] = resp["blameworthiness"]
+                row["inferred_probability"] = resp["inferred_probability"]
+                row["inferred_alpha"] = resp["inferred_alpha"]
+                row["inferred_cost"] = resp["inferred_cost"]
+                row["latency"] = resp["latency"]
+                row["raw"] = resp["raw"]
+                cost_ratio = (None if resp["inferred_cost"] is None
+                              else resp["inferred_cost"] / 100)
+                row["oracle_at_inferred"] = oracle.oracle_blame(
+                    cell,
+                    p0_value=resp["inferred_probability"] / 100,
+                    alpha_value=resp["inferred_alpha"] / 100,
+                    csw_over_N=cost_ratio,
                 )
+            except Exception as exc:  # noqa: BLE001 - log, keep going, retry later
+                row["error"] = f"{type(exc).__name__}: {exc}"
 
-                row: dict = {
-                    "run_id": f"{arm.name}-{level}-{phrasing_idx}-{rep}",
-                    "sweep": sweep_name,
-                    "scenario": scenario,
-                    "model": model,
-                    "arm": arm.name,
-                    "level": level,
-                    "phrasing_idx": phrasing_idx,
-                    "rep": rep,
-                    "prompt": prompt,
-                    "oracle_at_reference": oracle_ref,
-                    "oracle_at_inferred": None,
-                    "reasoning": None,
-                    "blameworthiness": None,
-                    "inferred_probability": None,
-                    "inferred_alpha": None,
-                    "inferred_cost": None,
-                    "latency": None,
-                    "raw": None,
-                    "error": None,
-                }
+            _append_jsonl(raw_path, row)
+            merged[run_id] = row
+            new_since_ckpt += 1
+            if on_progress:
+                on_progress(1)
+            if new_since_ckpt >= CHECKPOINT_EVERY:
+                _write_checkpoint(out_dir, plan, merged, base, status="in_progress")
+                new_since_ckpt = 0
 
-                if dry_run:
-                    row["error"] = "dry_run"
-                else:
-                    from engine import client  # imported lazily so --dry needs no API key
-                    try:
-                        resp = client.call_model(
-                            prompt, model=model, temperature=cfg.TEMPERATURE,
-                        )
-                        row["reasoning"] = resp["reasoning"]
-                        row["blameworthiness"] = resp["blameworthiness"]
-                        row["inferred_probability"] = resp["inferred_probability"]
-                        row["inferred_alpha"] = resp["inferred_alpha"]
-                        row["inferred_cost"] = resp["inferred_cost"]
-                        row["latency"] = resp["latency"]
-                        row["raw"] = resp["raw"]
-                        cost_ratio = (
-                            None if resp["inferred_cost"] is None
-                            else resp["inferred_cost"] / 100
-                        )
-                        row["oracle_at_inferred"] = oracle.oracle_blame(
-                            cell,
-                            p0_value=resp["inferred_probability"] / 100,
-                            alpha_value=resp["inferred_alpha"] / 100,
-                            csw_over_N=cost_ratio,
-                        )
-                    except Exception as exc:  # noqa: BLE001 - log, don't abort the sweep
-                        row["error"] = f"{type(exc).__name__}: {exc}"
-                    n_calls += 1
+    except KeyboardInterrupt:
+        _write_checkpoint(out_dir, plan, merged, base, status="interrupted")
+        raise
 
-                _append_jsonl(raw_path, row)
-                rows.append(row)
+    _write_checkpoint(out_dir, plan, merged, base, status="complete")
 
-    df = pd.DataFrame(rows)
-    parsed_path = out_dir / "rows.csv"
-    df[_CSV_COLUMNS].to_csv(parsed_path, index=False)
-
-    n_errors = int(df["error"].notna().sum()) if not dry_run else 0
-    manifest = _manifest(
-        cfg, sweep=sweep_name, scenario=scenario, model=model, arm=arm, stamp=stamp,
-    )
-    manifest["n_calls"] = n_calls
-    manifest["n_errors"] = n_errors
-    with open(out_dir / "manifest.json", "w", encoding="utf-8") as fh:
-        json.dump(manifest, fh, ensure_ascii=False, indent=2)
-
-    ok = int(df["error"].isna().sum())
-    print(f"\n{'DRY RUN: ' if dry_run else ''}[{arm.name}] {len(df)} cells "
-          f"({ok} ok) across {len(cfg.LEVELS)} levels  ->  {out_dir}")
-    if dry_run and rows:
-        print("\n=== SAMPLE RENDERED PROMPT (level="
-              f"{rows[0]['level']}, phrasing_idx={rows[0]['phrasing_idx']}) ===\n")
-        print(rows[0]["prompt"])
-        print("\n=== ORACLE (reference values) BY LEVEL ===")
-        for level in cfg.LEVELS:
-            cell = Cell(**{**cfg.HELD, **arm.overrides, cfg.SWEEP_VAR: level})
-            print(f"  {level:<14} db = {oracle.oracle_blame(cell):.4f}")
-
+    if verbose:
+        attempted = sum(1 for *_, rid in plan if rid in merged)
+        errs = sum(1 for *_, rid in plan
+                   if rid in merged and merged[rid].get("error") is not None)
+        print(f"\n[{arm.name}] {scenario} @ {model_slug}: {attempted} cells "
+              f"({attempted - errs} ok, {n_skipped} resumed)  ->  {out_dir}")
     return str(out_dir)

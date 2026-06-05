@@ -25,13 +25,15 @@ import argparse
 import importlib
 from itertools import product
 
+from tqdm.auto import tqdm
+
 from engine import runner
 
 # OpenRouter model ids, keyed by short name. Edit these to add/swap models.
 MODELS: dict[str, str] = {
-    "gemini":   "google/gemini-2.0-flash-001",
-    "nemotron": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
-    "qwen":     "qwen/qwen3.6-35b-a3b",
+    "qwen":   "qwen/qwen3-235b-a22b-2507",       # large open instruct (anchor)
+    "gemini": "google/gemini-2.5-flash",         # mid, fast
+    "llama":  "meta-llama/llama-3.3-70b-instruct",  # open, lower tier
 }
 
 # Scenario skins. All three are implemented; the driver still skips any scenario
@@ -101,14 +103,44 @@ def main() -> None:
     if not combos:
         raise SystemExit("no combinations selected; see --help")
 
-    print(f"sweep={args.sweep}  runs={len(combos)}  dry={args.dry}  limit={args.limit}")
-    for model_id, scenario, arm_name in sorted(combos):
-        arm = cfg.ARMS_BY_NAME[arm_name]
-        try:
-            runner.run(cfg, arm=arm, scenario=scenario, model=model_id,
-                       dry_run=args.dry, limit=args.limit)
-        except NotImplementedError:
-            print(f"SKIP [{arm_name}] {scenario} @ {model_id}: scenario not implemented")
+    ordered = sorted(combos)
+    print(f"sweep={args.sweep}  runs={len(ordered)}  dry={args.dry}  limit={args.limit}")
+
+    # Dry runs make no API calls, so a per-call progress bar is meaningless; just
+    # render each combo and return.
+    if args.dry:
+        for model_id, scenario, arm_name in ordered:
+            try:
+                runner.run(cfg, arm=cfg.ARMS_BY_NAME[arm_name], scenario=scenario,
+                           model=model_id, dry_run=True, limit=args.limit)
+            except NotImplementedError:
+                print(f"SKIP [{arm_name}] {scenario} @ {model_id}: not implemented")
+        return
+
+    # Total planned calls across the whole grid drives one global bar. Resumed
+    # (already-done) calls advance it too, so it reflects true completion.
+    total = sum(runner.count_planned(cfg, arm=cfg.ARMS_BY_NAME[arm_name],
+                                     scenario=scenario, limit=args.limit)
+                for model_id, scenario, arm_name in ordered)
+
+    bar = tqdm(total=total, unit="call", desc="experiment", smoothing=0.05)
+    try:
+        for model_id, scenario, arm_name in ordered:
+            bar.set_postfix_str(f"{scenario}/{arm_name}@{model_id.split('/')[-1]}")
+            try:
+                out = runner.run(cfg, arm=cfg.ARMS_BY_NAME[arm_name], scenario=scenario,
+                                 model=model_id, limit=args.limit,
+                                 on_progress=bar.update, verbose=False)
+            except NotImplementedError:
+                tqdm.write(f"SKIP [{arm_name}] {scenario} @ {model_id}: not implemented")
+                continue
+            tqdm.write(f"done [{arm_name}] {scenario} @ {model_id.split('/')[-1]}  ->  {out}")
+    except KeyboardInterrupt:
+        bar.close()
+        print("\ninterrupted. progress is saved; re-run the same command to resume "
+              "from where it stopped.")
+        raise SystemExit(130)
+    bar.close()
 
 
 if __name__ == "__main__":

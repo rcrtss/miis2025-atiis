@@ -216,26 +216,39 @@ One arm is one run. `engine/runner.py` executes a single arm of the sweep and
 writes a self-describing directory:
 
 ```
-results/<sweep>/<scenario>/<model>/<arm>/<UTC-stamp>/
-    manifest.json   full run config plus the oracle constants in force
-    rows.jsonl      full per-call log
-    rows.csv        tidy columns for analysis
+results/<sweep>/<scenario>/<model>/<arm>/
+    manifest.json   full run config plus the oracle constants in force, and status
+    rows.jsonl      append-only per-call log (the durable record)
+    rows.csv        tidy columns for analysis (rebuilt at each checkpoint)
 ```
+
+The directory is stable per (sweep, scenario, model, arm); there is no per-run
+timestamp in the path. That is what makes runs resumable. Each call is streamed to
+`rows.jsonl` as soon as it returns, so if a run is cancelled or dies, the completed
+calls survive. Re-running the same command reloads them, skips the calls already
+done, retries any that errored or are missing, and continues. The runner also
+rewrites `rows.csv` and the manifest at periodic checkpoints and on cancellation,
+so a partial run is never left without a manifest. Run timestamps and a `status`
+field (in_progress, interrupted, complete) live inside `manifest.json`.
 
 `manifest.json` snapshots everything needed to reproduce and to recompute the
 oracle: model, temperature, repetitions, seed, levels, arm name and overrides,
 held parameters, the wording policy, and the oracle block (the balance parameter,
 the pressure cost, and the reference tables for p0, cost, alpha, and stakes to N),
-plus a code version and timestamps. Provenance lives in data, not in filenames.
+plus a code version, timestamps, status, and call counts. Provenance lives in
+data, not in filenames.
 
 `run.py` is the driver. It expands a set of (model, scenario, arm) combinations
-and calls the runner once per combination, de-duplicating the shared baseline run:
+and calls the runner once per combination, de-duplicating the shared baseline run,
+and shows a single progress bar over all planned calls across the grid (resumed
+calls advance it too, so it reflects true completion):
 
 - Headline coverage: the baseline arm across all models and all scenario skins.
 - Validation coverage: all arms across all models, on Scenario A only.
 
 This keeps the validation cost bounded while still showing that the effects are
-not specific to one model.
+not specific to one model. For the report, the loader can be restricted to runs
+whose status is complete, so a half-finished resume does not bias an analysis.
 
 ## Statistical Analysis
 
