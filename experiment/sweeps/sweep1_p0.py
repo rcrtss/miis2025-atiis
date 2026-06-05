@@ -77,6 +77,8 @@ if __name__ == "__main__":
                     help="which OFAT arm to run (default: baseline)")
     ap.add_argument("--limit", type=int, default=None,
                     help="cap the number of API calls (live debugging)")
+    ap.add_argument("--concurrency", type=int, default=1,
+                    help="model calls to issue in parallel (default 1)")
     args = ap.parse_args()
 
     cfg = sys.modules[__name__]
@@ -91,7 +93,8 @@ if __name__ == "__main__":
     bar = tqdm(total=total, unit="call", desc=f"{SCENARIO}/{arm.name}", smoothing=0.05)
     try:
         runner.run(cfg, arm=arm, limit=args.limit,
-                   on_progress=bar.update, verbose=False)
+                   on_progress=bar.update, verbose=False,
+                   concurrency=args.concurrency)
     except KeyboardInterrupt:
         bar.close()
         print("\ninterrupted. progress is saved; re-run to resume.")

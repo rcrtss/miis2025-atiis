@@ -59,7 +59,20 @@ The whole grid via the driver:
 python -m run --headline                      # baseline arm, all models x all scenarios
 python -m run --validation                    # all arms, all models x s01
 python -m run --headline --validation         # both (shared baseline x s01 runs once)
-python -m run --validation --models nemotron --limit 5   # quick live smoke
+python -m run --validation --models gemini --limit 5     # quick live smoke
+python -m run --headline --concurrency 8      # 8 calls in parallel per run (much faster)
+```
+
+`--concurrency N` issues N model calls at once (they are network-bound); results
+are still written in the main thread, so resume/checkpoint semantics are
+unchanged. Because each (model, scenario, arm) writes its own stable directory,
+you can also shard across processes safely, e.g. one model each in parallel:
+
+```bash
+for m in qwen gemini llama; do
+  python -m run --headline --models $m --concurrency 8 &
+done
+wait
 ```
 
 Each run writes a stable `results/<sweep>/<scenario>/<model>/<arm>/` directory

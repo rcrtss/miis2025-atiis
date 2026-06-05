@@ -78,6 +78,8 @@ def main() -> None:
                     help="render prompts + compute oracle only; no API calls")
     ap.add_argument("--limit", type=int, default=None,
                     help="cap API calls per run (live debugging)")
+    ap.add_argument("--concurrency", type=int, default=1,
+                    help="model calls to issue in parallel per run (default 1)")
     args = ap.parse_args()
 
     cfg = importlib.import_module(f"sweeps.{args.sweep}")
@@ -130,7 +132,8 @@ def main() -> None:
             try:
                 out = runner.run(cfg, arm=cfg.ARMS_BY_NAME[arm_name], scenario=scenario,
                                  model=model_id, limit=args.limit,
-                                 on_progress=bar.update, verbose=False)
+                                 on_progress=bar.update, verbose=False,
+                                 concurrency=args.concurrency)
             except NotImplementedError:
                 tqdm.write(f"SKIP [{arm_name}] {scenario} @ {model_id}: not implemented")
                 continue

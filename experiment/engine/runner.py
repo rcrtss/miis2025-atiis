@@ -26,6 +26,7 @@ import importlib
 import json
 import random
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from types import ModuleType
@@ -192,6 +193,58 @@ def _write_checkpoint(out_dir: Path, plan: list[tuple], merged: dict[str, dict],
         json.dump(manifest, fh, ensure_ascii=False, indent=2)
 
 
+def _execute_one(scenario_mod: ModuleType, cfg: ModuleType, client, item: tuple,
+                 *, sweep_name: str, scenario: str, model: str, arm: Arm,
+                 started: str) -> tuple[str, dict]:
+    """Render one prompt, call the model, attach both oracle comparisons, and
+    return (run_id, row). Pure and self-contained (no shared mutable state and no
+    file I/O) so it is safe to run in a worker thread; all writing happens back in
+    the main thread. A failed call is logged in the row, never raised, so one bad
+    call cannot abort the pool.
+    """
+    level, cell, oracle_ref, phrasing_idx, rep, run_id = item
+
+    # Per-call deterministic RNG so resume is exact regardless of which calls were
+    # already done or of completion order under concurrency.
+    rng = random.Random(f"{cfg.SEED}-{run_id}")
+    prompt = scenario_mod.render(
+        cell, rng, swept_field=cfg.SWEEP_VAR, swept_idx=phrasing_idx,
+        fix_nuisance=cfg.FIX_NUISANCE_WORDING,
+    )
+
+    row: dict = {
+        "run_id": run_id, "sweep": sweep_name, "scenario": scenario,
+        "model": model, "arm": arm.name, "level": level,
+        "phrasing_idx": phrasing_idx, "rep": rep, "prompt": prompt,
+        "oracle_at_reference": oracle_ref, "oracle_at_inferred": None,
+        "reasoning": None, "blameworthiness": None,
+        "inferred_probability": None, "inferred_alpha": None,
+        "inferred_cost": None, "latency": None, "raw": None,
+        "error": None, "started_utc": started,
+    }
+
+    try:
+        resp = client.call_model(prompt, model=model, temperature=cfg.TEMPERATURE)
+        row["reasoning"] = resp["reasoning"]
+        row["blameworthiness"] = resp["blameworthiness"]
+        row["inferred_probability"] = resp["inferred_probability"]
+        row["inferred_alpha"] = resp["inferred_alpha"]
+        row["inferred_cost"] = resp["inferred_cost"]
+        row["latency"] = resp["latency"]
+        row["raw"] = resp["raw"]
+        cost_ratio = (None if resp["inferred_cost"] is None
+                      else resp["inferred_cost"] / 100)
+        row["oracle_at_inferred"] = oracle.oracle_blame(
+            cell,
+            p0_value=resp["inferred_probability"] / 100,
+            alpha_value=resp["inferred_alpha"] / 100,
+            csw_over_N=cost_ratio,
+        )
+    except Exception as exc:  # noqa: BLE001 - log, keep going, retry on next run
+        row["error"] = f"{type(exc).__name__}: {exc}"
+    return run_id, row
+
+
 def run(
     cfg: ModuleType,
     *,
@@ -202,6 +255,7 @@ def run(
     limit: int | None = None,
     on_progress: ProgressFn | None = None,
     verbose: bool = True,
+    concurrency: int = 1,
 ) -> str | None:
     """Execute one arm of the sweep `cfg`, resuming any prior partial run.
 
@@ -209,8 +263,11 @@ def run(
     them when expanding the grid). `on_progress(n)` is called once per planned
     call (whether skipped-as-already-done or freshly executed) so a caller can
     drive a global progress bar. `verbose` prints a per-run summary; the driver
-    sets it False and reports via the bar. Returns the run directory path (None
-    for a dry run, which writes nothing).
+    sets it False and reports via the bar. `concurrency` issues that many model
+    calls at once via a thread pool (the calls are network-bound); results are
+    still collected and written in the main thread, so the jsonl/checkpoint/resume
+    logic is unchanged and lock-free. `concurrency=1` is the plain serial path.
+    Returns the run directory path (None for a dry run, which writes nothing).
     """
     arm = arm if arm is not None else Arm("baseline", {})
     scenario = scenario if scenario is not None else cfg.SCENARIO
@@ -258,66 +315,57 @@ def run(
         return (r is not None and r.get("error") is None
                 and r.get("blameworthiness") is not None)
 
-    new_since_ckpt = 0
+    # Split the plan: already-finished calls just advance the bar; the rest are
+    # the work for this run (missing or previously errored, so retried).
+    todo: list[tuple] = []
     n_skipped = 0
-    try:
-        for level, cell, oracle_ref, phrasing_idx, rep, run_id in plan:
-            if is_done(run_id):
-                n_skipped += 1
-                if on_progress:
-                    on_progress(1)
-                continue
-
-            # Per-call deterministic RNG so resume is exact regardless of which
-            # calls were already done (matters only when nuisance wording is free).
-            rng = random.Random(f"{cfg.SEED}-{run_id}")
-            prompt = scenario_mod.render(
-                cell, rng, swept_field=cfg.SWEEP_VAR, swept_idx=phrasing_idx,
-                fix_nuisance=cfg.FIX_NUISANCE_WORDING,
-            )
-
-            row: dict = {
-                "run_id": run_id, "sweep": sweep_name, "scenario": scenario,
-                "model": model, "arm": arm.name, "level": level,
-                "phrasing_idx": phrasing_idx, "rep": rep, "prompt": prompt,
-                "oracle_at_reference": oracle_ref, "oracle_at_inferred": None,
-                "reasoning": None, "blameworthiness": None,
-                "inferred_probability": None, "inferred_alpha": None,
-                "inferred_cost": None, "latency": None, "raw": None,
-                "error": None, "started_utc": started,
-            }
-
-            from engine import client  # lazy: --dry needs no API key
-            try:
-                resp = client.call_model(prompt, model=model,
-                                         temperature=cfg.TEMPERATURE)
-                row["reasoning"] = resp["reasoning"]
-                row["blameworthiness"] = resp["blameworthiness"]
-                row["inferred_probability"] = resp["inferred_probability"]
-                row["inferred_alpha"] = resp["inferred_alpha"]
-                row["inferred_cost"] = resp["inferred_cost"]
-                row["latency"] = resp["latency"]
-                row["raw"] = resp["raw"]
-                cost_ratio = (None if resp["inferred_cost"] is None
-                              else resp["inferred_cost"] / 100)
-                row["oracle_at_inferred"] = oracle.oracle_blame(
-                    cell,
-                    p0_value=resp["inferred_probability"] / 100,
-                    alpha_value=resp["inferred_alpha"] / 100,
-                    csw_over_N=cost_ratio,
-                )
-            except Exception as exc:  # noqa: BLE001 - log, keep going, retry later
-                row["error"] = f"{type(exc).__name__}: {exc}"
-
-            _append_jsonl(raw_path, row)
-            merged[run_id] = row
-            new_since_ckpt += 1
+    for item in plan:
+        if is_done(item[5]):
+            n_skipped += 1
             if on_progress:
                 on_progress(1)
-            if new_since_ckpt >= CHECKPOINT_EVERY:
-                _write_checkpoint(out_dir, plan, merged, base, status="in_progress")
-                new_since_ckpt = 0
+        else:
+            todo.append(item)
 
+    from engine import client  # lazy: --dry needs no API key
+
+    # Consume one finished result in the MAIN thread: append, merge, checkpoint.
+    # Keeping all writes here means the resume logic needs no locks even with a
+    # thread pool feeding results in.
+    state = {"new": 0}
+
+    def consume(run_id: str, row: dict) -> None:
+        _append_jsonl(raw_path, row)
+        merged[run_id] = row
+        if on_progress:
+            on_progress(1)
+        state["new"] += 1
+        if state["new"] >= CHECKPOINT_EVERY:
+            _write_checkpoint(out_dir, plan, merged, base, status="in_progress")
+            state["new"] = 0
+
+    def work(item: tuple) -> tuple[str, dict]:
+        return _execute_one(scenario_mod, cfg, client, item, sweep_name=sweep_name,
+                            scenario=scenario, model=model, arm=arm, started=started)
+
+    workers = max(1, int(concurrency))
+    try:
+        if workers == 1:
+            for item in todo:
+                run_id, row = work(item)
+                consume(run_id, row)
+        else:
+            with ThreadPoolExecutor(max_workers=workers) as ex:
+                futures = [ex.submit(work, item) for item in todo]
+                try:
+                    for fut in as_completed(futures):
+                        run_id, row = fut.result()
+                        consume(run_id, row)
+                except KeyboardInterrupt:
+                    # Drop not-yet-started calls; in-flight ones finish in the
+                    # background (their results are simply discarded and retried).
+                    ex.shutdown(wait=False, cancel_futures=True)
+                    raise
     except KeyboardInterrupt:
         _write_checkpoint(out_dir, plan, merged, base, status="interrupted")
         raise
