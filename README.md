@@ -10,25 +10,6 @@ This project implements and empirically tests the group blameworthiness framewor
 
 **Q2.** When LLM agents are placed in the same scenario under varying context (believed probability, cost), does their behavior shift in the direction the framework predicts?
 
-**Q3.** Where empirical results diverge from theoretical predictions, which assumptions account for the discrepancy?
-
-**Q4\*.** *(Bonus)* If agents are given means to communicate, do they form coalitions?
-
-## Q2 Preliminary Proposal
-
-![Preliminary Proposal](./docs/img/rm_q2_preliminary_proposal.png)
-
-## Course Blocks
-
-| Block | Weeks | Status |
-|-------|-------|--------|
-| 0. Scoping | 1–3 | ✅ Done |
-| 1. Theory | 4–5 | ✅ Done |
-| 2. Implementation | 6 | 🔄 Starting |
-| 3. Experimental Design | 7–8 | ⬜ |
-| 4. Execution & Analysis | 9–10 | ⬜ |
-| 5. Write-up | 10–11 | ⬜ |
-
 ## Key Reference
 
 Friedenberg, M., & Halpern, J. Y. (2019). Blameworthiness in Multi-Agent Settings. *Proceedings of the AAAI Conference on Artificial Intelligence*, 33(01), 525–532.
