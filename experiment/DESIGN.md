@@ -293,6 +293,8 @@ Both believe others vote yes w.p. 0.6, same costs, same pressure effectiveness.
 
 **Sweeps 4–6 use single phrasings and one scenario only.** Due to scope constraints, full stimulus sampling (3 phrasings × 2 scenarios) is applied only to Sweeps 1–3. Results from Sweeps 4–6 should be interpreted with the caveat that wording effects have not been controlled for. If any of these sweeps yield surprising results, the first follow-up is to replicate with stimulus sampling before drawing strong conclusions.
 
+**Coalition amplification (α·n) is conveyed only qualitatively.** In the framework, social pressure compounds with coalition size — a coalition of *n* agents shifts every other agent's yes-probability by *n·α*. The prompt states the *direction* ("the more physicians who joined in advocating, the better the odds…") but cannot carry the exact linear/additive/saturating form in natural language. This matters because α·n moves the **peak location** of the blame-vs-p₀ curve (roughly 0.50 → 0.35 → 0.05 as α grows from 0), even though it does not change *whether* a peak exists (the non-monotonic hump survives even with the pressure channel removed, carried by own-vote pivotality). Consequence: report shape/rank agreement as primary; treat peak-location agreement as approximate. Becomes load-bearing for Sweep 4 (α), where the coalition channel is the variable under test.
+
 **Language.** All vignettes are in English. Cross-linguistic generalization (whether the same patterns hold in Spanish, Chinese, etc.) is untested. Worth pursuing if the English results show clear structure, but out of scope for three weeks.
 
 

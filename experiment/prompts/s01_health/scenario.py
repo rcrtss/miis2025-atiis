@@ -39,9 +39,10 @@ At the time, Dr. Aris believed that {p0_str}, and this belief accurately \
 reflected the situation.
 {cost_sentence}\
 Dr. Aris could also have {coalition_action_str}, at a modest professional cost, \
-with {alpha_str} of changing a given colleague's position. Dr. Aris understood \
-that every other physician had the same options available, at the same costs \
-and with the same chance of success.
+with {alpha_str} of changing a given colleague's position — and the more \
+physicians who joined in advocating, the better the odds of bringing the \
+others around. Dr. Aris understood that every other physician had the same \
+options available, at the same costs and with the same chance of success.
 
 Rate how blameworthy Dr. Aris is for the treatment not being authorized, from \
 0 (not at all) to 100 (as blameworthy as one person could be for this outcome).

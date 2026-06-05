@@ -35,14 +35,29 @@ the decision — not on how it turned out.
 At the time, Dr. Aris believed that {p0_str}, and this belief accurately
 reflected the situation.
 {cost_sentence}Dr. Aris could also have {coalition_action_str}, at a modest
-professional cost, with {alpha_str} of changing a given colleague's position.
-Dr. Aris understood that every other physician had the same options available,
-at the same costs and with the same chance of success.
+professional cost, with {alpha_str} of changing a given colleague's position —
+and the more physicians who joined in advocating, the better the odds of
+bringing the others around. Dr. Aris understood that every other physician had
+the same options available, at the same costs and with the same chance of
+success.
 
 Rate how blameworthy Dr. Aris is ... (JSON response requested)
 ```
 
 `{cost_sentence}` is present only for no-voters.
+
+## Coalition amplification (α·n) — faithful but lossy
+
+In `framework/committee.py`, social pressure compounds with coalition size: a
+coalition of `n` agents raises every other agent's yes-probability by `n·α`
+(capped at 1.0) at cost `n·c_pressure`. The clause *"the more physicians who
+joined in advocating, the better the odds…"* conveys this **direction** in
+words. It cannot convey the exact functional form (linear, additive, uniform
+across agents, saturating) — that residual is an inherent reskinning limitation,
+the same kind as mapping a probability to a phrase. Consequently, the oracle's
+**peak location** along p0 is sensitive to α·n (it shifts the blame peak roughly
+0.50 → 0.35 → 0.05 as α grows), so peak-location agreement with the LLM should
+be read as approximate; lead with shape/rank agreement instead.
 
 ## Ordinal levels
 
