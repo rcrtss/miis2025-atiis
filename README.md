@@ -10,6 +10,8 @@ This project implements and empirically tests the group blameworthiness framewor
 
 **Q2.** When LLM agents are placed in the same scenario under varying context (believed probability, cost), does their behavior shift in the direction the framework predicts?
 
+![Sweep p0 in the reimplementation of Friedenberg & Halpern (2019)](./docs/img/sweep_p0_oracle.png)
+
 ## Key Reference
 
 Friedenberg, M., & Halpern, J. Y. (2019). Blameworthiness in Multi-Agent Settings. *Proceedings of the AAAI Conference on Artificial Intelligence*, 33(01), 525–532.

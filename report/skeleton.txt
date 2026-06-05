@@ -43,7 +43,8 @@ Methods
   Limitations
 
   L1 —
-
+  L3 — The committee example is a very specific and stylized scenario, and may not generalize to more complex or realistic scenarios. Future work could consider more complex scenarios with more agents, more actions, and more complex cost structures to see if the findings hold.
+  L4 — Varying Stakes (the three scenarios do not cover difference in stakes comprehensively. More scenarios can be good to avoid confounding effects). Future work could consider varying stakes within the same scenario to see if LLMs are sensitive to stakes or just surface actions.
 
   ---
   Conclusions & Future Work
