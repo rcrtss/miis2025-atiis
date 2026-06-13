@@ -62,57 +62,169 @@
 \section{Introduction}
 
 %-----------------------------
-
 \subsection{Perspectives on Blame and Responsibility}
 
-% - Open by saying blameworthiness is not one single idea; different traditions emphasize control, alternatives, intention, causality, knowledge, and group structure.
-% - Use **Frankfurt** to mark the classic shift away from “could have done otherwise” as the core condition for responsibility.
-% - Use **Fischer and Ravizza** to show the control-based view: responsibility depends on actual guidance or ownership of the action.
-% - Add **Malle** as the psychological angle: blame is shaped by perceived intent, causality, foreseeability, and preventability.
-% - Move to **Chockler and Halpern** for the formal causal account: blame and responsibility can be measured in degrees using structural models.
-% - Then **Halpern and Kleiman-Weiner**: blame also depends on the agent’s epistemic state, not just causation.
-% - End with **Friedenberg and Halpern**: in multiagent settings, blame must be assigned to groups and then distributed to individuals, since outcomes are jointly produced.
+% - Open by saying blameworthiness is not a single notion; different traditions emphasize control, alternatives, intention, causality, knowledge, and group structure.
+% - Use Frankfurt to mark the classic shift away from “could have done otherwise” as the core condition for responsibility.
+% - Use Fischer and Ravizza to show the control-based view: responsibility depends on actual guidance or ownership of the action.
+% - Add Malle as the psychological angle: blame is shaped by perceived intent, causality, foreseeability, and preventability.
+% - Move to Chockler and Halpern for the formal causal account: blame and responsibility can be measured in degrees using structural models.
+% - Then Halpern and Kleiman-Weiner: blame also depends on the agent’s epistemic state, not just causation.
+% - End with Friedenberg and Halpern: in multiagent settings, blame must be assigned to groups and then distributed to individuals, since outcomes are jointly produced.
 % - The overall narrative is: from philosophical responsibility, to psychological blame, to formal causal and epistemic models, to collective blame allocation.
 
 \subsection{Causal Models and Blameworthiness in Multi-agent Systems}
 
-\subsection{The Committee of Voters Example}
+% - Introduce causal models as the formal language used to represent how outcomes depend on agents’ actions.
+% - Emphasize that blameworthiness in multi-agent settings is not just about one agent causing an outcome, but about how several agents jointly contribute to it (mention the tragedy of the commons)
+% - Explain that structural models allow one to isolate causal dependence and compare alternative action profiles.
+% - Motivate why degree-based notions are needed: in collective settings, agents may contribute unequally to the same outcome.
+% - Connect this section to the later allocation problem by noting that group-level blame must often be decomposed into individual shares.
+
+\subsection{The \textit{Committee of Voters} Example}
+
+% - Present the committee of voters example as an intuitive illustration of collective decision-making and shared responsibility.
+% - Use it to show that a harmful outcome may depend on a combination of votes rather than any single voter alone.
+% - Highlight that this example makes the difference between individual causal contribution and group-level blame especially clear.
+% - Explain that the example motivates apportionment questions: who is blameworthy, and by how much?
+% - Keep the discussion focused on why the example is useful as a bridge from abstract theory to multiagent blame allocation.
+
+\subsection{The FH Blameworthiness Framework}
+
+% - Formalise the framework here -- right after the intuitive committee example and *before* the research questions, since RQ1 quantifies over this object and Results reference its quantities. Keep equations light: definitions plus the two key formulas.
+% - Define the epistemic state (per-agent probability of voting yes) and the outcome probability (bill passes iff >= threshold yes-votes).
+% - Define group blameworthiness gb = delta * (N - cost) / N, where delta is the achievable increase in outcome probability a coalition can cause (via social pressure and/or the target switching its vote), cost is the coalition's action cost, and N is the balance parameter trading off harm averted against cost incurred.
+% - Define individual blameworthiness as the Shapley apportionment of gb over coalitions containing the target agent.
+% - Name the parameters that the rest of the report varies: belief (p0), vote, switch cost (c_sw), stakes (N), pressure effectiveness (alpha), threshold, group size.
 
 \subsection{Responsibility of AI Systems}
 
 % As AI systems are increasingly embedded into our society, we argue that as a means to support ethical and humancentred AI, it is necessary to develop precise models for reasoning about responsibility of AI systems (Dastani, 2023)
+% - Argue that as AI systems become embedded in society, responsibility questions become practically important rather than purely theoretical.
+% - Frame the section around the need for precise models of responsibility and blame to support ethical and human-centred AI.
+% - Emphasize that AI systems may act autonomously, interact with other agents, and influence outcomes in ways that resemble multiagent settings.
+% - Note that this raises questions about whether responsibility lies with the system itself, its designers, deployers, or users.
+% - Use this section to motivate why formal blameworthiness frameworks are useful for AI governance and accountability.
 
 \subsubsection{Large Language Models as Agents}
 
+% - Treat LLMs as agents insofar as they can generate actions or outputs that affect outcomes in task environments.
+% - Explain that this raises the question of whether LLMs should be described as responsible participants or only as tools used by humans.
+% - Emphasize the tension between apparent autonomy and the lack of genuine moral agency.
+% - Note that even if LLMs are not morally responsible in a full philosophical sense, they may still be part of causal explanations in a multiagent system.
+% - Use this subsection to motivate formal attribution without assuming full personhood.
+
 \subsubsection{Large Language Models as Judges}
 
-\subsubsection{Blameworthiness Apportionment in Multi-agent Settings}
+% - Present LLMs as judges as a distinct use case where models evaluate, classify, or allocate blame among agents.
+% - Highlight that this setting is normatively sensitive because the model’s judgments may influence accountability decisions.
+% - Stress the importance of consistency, transparency, and alignment with human notions of blameworthiness.
+% - Explain that this use case motivates studying whether LLMs can approximate or support human blame judgments in structured scenarios.
+% - Link this subsection to the broader question of whether AI can assist with responsibility assessment without replacing human judgment.
+
+\subsubsection{Large Language Models Apportioning Blame}
+
+% - Introduce the idea of LLMs not just judging blame but actively apportioning it among multiple agents.
+% - Emphasize that this is a more complex task than binary blame assignment, as it requires reasoning about degrees of contribution and fairness.
+% - Note that this task is particularly relevant in multiagent settings where outcomes are jointly produced and responsibility is shared.
+% - Mention that LLMs are being increasingly used in decision support and advisory roles, which makes their ability to apportion blame a practical and ethical concern.
+% - Highlight that this motivates empirical studies to evaluate how well LLMs can perform blame apportionment compared to human judgments and formal models.
 
 \subsection{Research Questions}
+
+The main question that this work aims to address is: to what extent do LLM-based judges reproduce the structure of FH blameworthiness in a multi-agent committee? We address this through two sub-questions:
+
+\begin{itemize}
+  \item \textbf{RQ1.} How does the blameworthiness assigned by the Friedenberg--Halpern committee framework vary across its parameters (belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size)?
+  \item \textbf{RQ2.} Do LLM-based judges placed in the same committee scenario assign blame that varies, in direction and in shape, as the framework's predictions specify?
+\end{itemize}
 
 %-----------------------------
 
 \section{Methodology}
 
-\subsection{Replication of the Committee of Voters Example \small (FH Blameworthiness, 2023) }
+\subsection{Replication of the \textit{Committee of Voters} Example \small (FH Blameworthiness, 2023)}
 
-\subsection{}
+% - Note what was replicated and what was demonstrated, including the FH framework's ability to compute blameworthiness in multi-agent settings.
+% - Particularly, explicitly note how "epistemic state" is represented in the implementation, and how it is used to compute blameworthiness. Explain probability, coalitions of agents, and how these relate to causal models.
+% - Describe how each parameter translates into the implementation, and how the blameworthiness is computed for each agent.
+% - Explain technologies used and where to find the code (github repo)
+% - Note that the framework leaves the balance parameter N unspecified beyond N > max(cost). Report the N-sweep showing the agent blame *ordering* is invariant to N, which justifies treating the framework as a single well-defined oracle for RQ1 and RQ2.
+% - State that, after reverse engineering the value of N, our implementation recovers the paper's reported per-agent blame values (ag1-ag6, Sec 3.4), establishing faithfulness; this is a verification step, not a finding.
+
+\subsubsection{Parameter Sensitivity Analysis of FH Blameworthiness}
+
+% - Explain that we systematically sweep each parameter of the FH framework to observe how blameworthiness changes, which addresses RQ1. (Note: this is a parameter sweep / sensitivity analysis, not an ablation -- we vary parameter values, we do not remove components.)
+% - Note that this analysis is designed to explore the sensitivity of blameworthiness to each parameter, providing a comprehensive understanding of the framework's behavior beyond the single configuration reported in the paper.
+% - Describe the parameter ranges and the rationale for choosing them, including belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size.
+
+\subsection{LLM-based Judges for Blameworthiness Apportionment}
+
+% - Describe the experimental setup for evaluating LLM-based judges, referring to the prompts used, the challenges regarding wording, and the need for consistency across scenarios.
+% - Clarify the framing: the model is placed in an agent's position within the committee scenario and asked to *judge* its own blameworthiness, so it acts as agent and judge at once. State this explicitly so the agent/judge distinction is not muddled.
+% - Describe the scenarios presented, the skins/framings (s01 health, s02 grant, s03 board), and how blameworthiness is elicited from the models (0-100 score).
+% - Words on how parameter values must be expressed in natural language only (no numbers in prompts); subjective parameters are ordinal labels mapped to wordings, and that mapping is itself what the experiment tests.
+% - Note that to recover the value the model reasoned from, we also ask it for its own estimate (inferred p0, alpha, cost), enabling an assumption-free oracle comparison (oracle_at_inferred) alongside the nominal one (oracle_at_reference).
+% - Explain that this was repeated across models, scenarios, phrasings, and repetitions.
+
+% Headline sweep (RQ2, shape):
+% - The headline manipulation sweeps belief (p0) across all models x scenarios; this tests whether the LLM blame curve reproduces the framework's non-monotonic shape.
+
+% Validation arms (RQ2, direction of shift):
+% - Describe the one-variable-at-a-time (OFAT) validation arms that change a single held variable -- own vote, pressure effectiveness (alpha), and switch cost / stakes -- and check the LLM curve shifts in the direction the oracle curve shifts.
+% - State the coverage honestly: the validation arms were run for one model (qwen) and one scenario (s01) only, so they are indicative, not confirmatory (see Limitations).
+% - List the models, scenarios, and per-arm conditions.
 
 \section{Results}
 
-\subsection{}
+\subsection{Parameter Sensitivity Analysis of FH Blameworthiness (RQ1)}
+
+% - Present the results of the ablation study, showing how blameworthiness varies with each parameter.
+% - Use tables and figures to illustrate the relationships between parameters and blameworthiness.
+% - Discuss any patterns observed, such as monotonicity, thresholds, or non-linear effects
+% - Highlight any surprising findings or deviations from expected behavior, and provide possible explanations based on the theoretical framework.
+% - Conclude with a summary of how the FH framework's predictions hold up under systematic parameter variation, and how this informs the interpretation of RQ1 and RQ2.
+
+\subsection{LLM-based Judges (RQ2)}
+
+% - Present the results of the LLM-based judges' blameworthiness assignments, comparing them to the FH framework's predictions.
+% - Use tables and figures to illustrate the alignment or divergence between LLM judgments and the FH framework.
+% - Discuss any patterns observed, such as consistency across different models, sensitivity to prompt phrasing, or alignment with human intuition.
+% - Highlight any surprising findings or deviations from expected behavior, and provide possible explanations based on the models' training data, architecture, or limitations.
+% - Conclude with a summary of how well LLM-based judges reproduce the structure of FH blameworthiness, and how this informs the interpretation of RQ2.
 
 \section{Discussion}
 
-\subsection{}
+\subsection{Interpretation of Results}
+
+% - Provide a detailed interpretation of the results from both RQ1 and RQ2, synthesizing the findings from the parameter sensitivity analysis and the LLM-based judges.
+% - Discuss the implications of the results for understanding blameworthiness in multi-agent settings, and how they inform the broader questions of responsibility and accountability in AI systems.
+% - Highlight any theoretical contributions, practical implications, or insights gained from the study, and how they relate to existing literature on blameworthiness and responsibility.
+
+\subsection{How Closely LLM Blame Matches the Framework}
+
+% "Right pattern, wrong magnitude"
+% - This is the headline finding and deserves its own subsection so it is not diluted into general interpretation.
+% - State the qualitative result: the models reproduce the *signature* of counterfactual (Shapley) blame -- non-monotonic in belief, peaking at moderate belief and declining toward certainty, sensitive to vote and to lobbying effectiveness -- and this is not an artifact of misreading inputs (inferred p0 rises monotonically with the swept level).
+% - State the quantitative gap: the oracle's peak-to-trough range is compressed by the models (roughly 60x -> ~1.3-1.8x); a correct (yes) vote is never fully exonerated to zero; and blame is insensitive to switch cost.
+% - Note that feeding each model its own inferred values (oracle_at_inferred) gives weaker agreement than the nominal mapping, so blame is not a clean function of the quantities the model reports reasoning from.
+% - Note the framing effect: the cold corporate-board skin (s03) tracks the oracle most weakly, the affect-laden health skin (s01) most strongly.
+% - Draw the implication for the LLM-as-judge use case: models capture the direction of structured blame but are not calibrated enough to be trusted with its magnitude.
 
 \section{Limitations}
 
+% Scope this section to what is *wrong or unverified* about the study (leave "what to do next" to Future Work to avoid repetition).
+% - Coverage: the RQ2 validation arms (vote, alpha, cost/stakes) were run for a single model (qwen) and a single scenario (s01) only, so every direction-of-shift result rests on one cell and is indicative, not confirmatory. Only the headline p0 sweep has full model x scenario coverage.
+% - The framework itself encodes modelling choices (the ordinal-label -> number mapping, the balance parameter N, the social-pressure model) that condition every oracle comparison.
+% - LLM-specific threats: sensitivity to prompt phrasing, limited model set, and the elicited 0-100 blame scale may compress or distort magnitudes.
+% - The natural-language-only design means the LLM's reading of a parameter may diverge from the nominal mapping; we measure this (inferred values) but cannot fully control it.
+
 \section{Conclusions and Future Work}
 
-% What was replicated and demonstrated
-% Future Work
-% Closing
+% Conclusions = what we found; Future Work = what to do next. Keep these distinct from Limitations above.
+% - Summarize the key findings: the FH framework's behaviour across its parameter space (RQ1), and the qualitative-but-miscalibrated tracking by LLM judges (RQ2).
+% - Discuss the implications for AI governance, accountability, and the LLM-as-judge use case (direction trustworthy, magnitude not).
+% - Future work: extend the validation arms to full model x scenario coverage; test more models; explore calibration / fine-tuning to close the quantitative gap; investigate alternative blameworthiness frameworks and richer multi-agent scenarios.
 
 \newpage
 
