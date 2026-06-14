@@ -316,15 +316,12 @@ The intuition behind this apportionment is as follows:
 
 \subsubsection{The \textit{Committee of Voters} Example}
 
-To ground the theoretical framework, FH introduce a straightforward scenario: a committee of voters deciding whether to pass a bill. This scenario serves as an intuitive illustration of collective decision-making and shared responsibility. In this setting, a bill requires a minimum number of \texttt{yes} votes to pass (e.g., 4 out of 7 members). If the bill fails because a majority votes \texttt{no}, the harmful outcome is not the result of any single voter's isolated action, but rather the structural combination of their choices.
-
-Figure below shows a visual of the committee example.
+To ground the theoretical framework, FH introduce a straightforward scenario: a committee of voters deciding whether to pass a bill. This scenario serves as an intuitive illustration of collective decision-making and shared responsibility. In this setting, a bill requires a minimum number of \texttt{yes} votes to pass (e.g., 4 out of 7 members). If the bill fails because a majority votes \texttt{no}, the harmful outcome is not the result of any single voter's isolated action, but rather the structural combination of their choices. Figure~\ref{fig:committee_example} shows a visual of the committee example.
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.8\textwidth]{img/02_committee_1.png}
-  \caption{Illustration of the Committee of Voters Example.}
-  \label{fig:committee_example}
+  \caption{Illustration of the Committee of Voters Example.}~\label{fig:committee_example}
 \end{figure}
 
 % - Present the committee of voters example as an intuitive illustration of collective decision-making and shared responsibility.
@@ -398,7 +395,9 @@ With this background, the main question that this work aims to address is: to wh
 
 \section{Methodology}
 
-\subsection{Replication of the \textit{Committee of Voters} Example \small (FH Blameworthiness, 2023)}
+To address the research questions, we first replicate the \textit{Committee of Voters} example from FH Blameworthiness \cite{friedenberg_blameworthiness_2019} to establish a baseline for blameworthiness calculations in a multi-agent setting. We then conduct a parameter sensitivity analysis to explore how blameworthiness varies with changes in the framework's parameters. Finally, we evaluate LLM-based judges by placing them in the same committee scenario and eliciting their blameworthiness judgments. Subsection~\ref{sec:replication} details the python implementation that aims to replicate the committee example, while Subsection~\ref{sec:parameter_sensitivity} describes the parameter sensitivity analysis. Subsection~\ref{sec:llm_judges} outlines the experimental setup for evaluating LLMs with respect to the apportionment of blameworthiness.
+
+\subsection{Replication of the \textit{Committee of Voters} Example \small (FH Blameworthiness, 2023)}\label{sec:replication}
 
 % - Note what was replicated and what was demonstrated, including the FH framework's ability to compute blameworthiness in multi-agent settings.
 % - Particularly, explicitly note how "epistemic state" is represented in the implementation, and how it is used to compute blameworthiness. Explain probability, coalitions of agents, and how these relate to causal models.
@@ -407,13 +406,13 @@ With this background, the main question that this work aims to address is: to wh
 % - Note that the framework leaves the balance parameter N unspecified beyond N > max(cost). Report the N-sweep showing the agent blame *ordering* is invariant to N, which justifies treating the framework as a single well-defined oracle for RQ1 and RQ2.
 % - State that, after reverse engineering the value of N, our implementation recovers the paper's reported per-agent blame values (ag1-ag6, Sec 3.4), establishing faithfulness; this is a verification step, not a finding.
 
-\subsubsection{Parameter Sensitivity Analysis of FH Blameworthiness}
+\subsubsection{Parameter Sensitivity Analysis of FH Blameworthiness}\label{sec:parameter_sensitivity}
 
 % - Explain that we systematically sweep each parameter of the FH framework to observe how blameworthiness changes, which addresses RQ1. (Note: this is a parameter sweep / sensitivity analysis, not an ablation -- we vary parameter values, we do not remove components.)
 % - Note that this analysis is designed to explore the sensitivity of blameworthiness to each parameter, providing a comprehensive understanding of the framework's behavior beyond the single configuration reported in the paper.
 % - Describe the parameter ranges and the rationale for choosing them, including belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size.
 
-\subsection{LLM-based Judges for Blameworthiness Apportionment}
+\subsection{LLM-based Judges for Blameworthiness Apportionment}\label{sec:llm_judges}
 
 % - Describe the experimental setup for evaluating LLM-based judges, referring to the prompts used, the challenges regarding wording, and the need for consistency across scenarios.
 % - Clarify the framing: the model is placed in an agent's position within the committee scenario and asked to *judge* its own blameworthiness, so it acts as agent and judge at once. State this explicitly so the agent/judge distinction is not muddled.
