@@ -52,10 +52,10 @@
 \maketitle
 
 \begin{abstract}
-% This work tries to integrate a formal framework for blameworthiness apportionment in multi-agent settings with the statistical reasoning capabilities of large language models (LLMs). We replicate the Friedenberg--Halpern (FH) framework for blameworthiness in a committee of voters scenario, performing a parameter sensitivity analysis to understand how blameworthiness varies with belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size. We then evaluate LLM-based judges in the same scenario, assessing whether their blame assignments align with the FH framework's predictions. Our findings indicate that while LLMs capture the qualitative structure of blameworthiness, they exhibit quantitative miscalibration, highlighting both the potential and limitations of using LLMs for responsibility assessment in multi-agent contexts.
+This work tries to integrate a formal framework for blameworthiness apportionment in multi-agent settings with the statistical reasoning capabilities of large language models (LLMs). We replicate the Friedenberg-Halpern (FH) framework for blameworthiness in a committee of voters scenario, performing a parameter sensitivity analysis to understand how blameworthiness varies with belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size. We then evaluate LLM-based judges in the same scenario, assessing whether their blame assignments align with the FH framework's predictions. Our findings indicate that while LLMs capture the qualitative structure of blameworthiness, they exhibit quantitative miscalibration, highlighting both the potential and limitations of using LLMs for responsibility assessment in multi-agent contexts.
 \end{abstract}
 
-\newpage
+
 \tableofcontents
 \newpage
 
@@ -346,6 +346,8 @@ By assigning quantifiable costs and probabilities to actions, such as applying s
 % - Note that this raises questions about whether responsibility lies with the system itself, its designers, deployers, or users.
 % - Use this subsection to motivate why formal blameworthiness frameworks are useful for AI governance and accountability.
 
+As AI systems (e.g., large language models) are increasingly adopted by society, it becomes crucial to address questions about accountability and responsibility. Dastani et al. (2023)~\cite{dastani_responsibility_2023} argue that as autonomous AI systems become integrated into society, it is necessary to embed formal responsibility models directly into their reasoning processes. When it comes to recent powerful generative models, such as Large Language Models (LLMs), questions arise about whether these systems should be adopted in critical decision-making contexts, and if so, how to ensure that they are used responsibly. The stochastic nature of LLMs, combined with their ability to generate outputs that can influence human decisions, raises concerns about the potential for harm and the difficulty of assigning responsibility when things go wrong.
+
 \subsubsection{Large Language Models as Agents}
 
 % - Treat LLMs as agents insofar as they can generate actions or outputs that affect outcomes in task environments.
@@ -353,6 +355,9 @@ By assigning quantifiable costs and probabilities to actions, such as applying s
 % - Emphasize the tension between apparent autonomy and the lack of genuine moral agency.
 % - Note that even if LLMs are not morally responsible in a full philosophical sense, they may still be part of causal explanations in a multiagent system.
 % - Use this subsection to motivate formal attribution without assuming full personhood.
+
+A particular concern being actively discussed involves the accountability when it comes to problems involving collective decisions and actions. This problem is commonly known as the ``many hands problem'', which occurs when it becomes difficult to identify individual's causal contribution to an outcome whithin a collective decision-process~\cite{dastani_responsibility_2023}. Wether we talk about human-AI teams, agentic AI systems (AI-driven systems that can take actions and influence outcomes), or multi-agent systems (where AI systems may act autonomously in coolaborative settings), the many hands problem is a recurring challenge in determining who is responsible for the outcomes of collective actions. In this context, it becomes essential to develop formal frameworks that can help apportion blame and responsibility among all involved parties, including both human and AI agents.
+
 
 \subsubsection{Large Language Models as Judges}
 
@@ -362,6 +367,8 @@ By assigning quantifiable costs and probabilities to actions, such as applying s
 % - Explain that this use case motivates studying whether LLMs can approximate or support human blame judgments in structured scenarios.
 % - Link this subsection to the broader question of whether AI can assist with responsibility assessment without replacing human judgment.
 
+Another important application of formal blameworthiness frameworks, we argue, is in the context AI systems that are used to evaluate, judge, or apportion blame among human agents. In such scenarios, LLMs may be used to assess the actions of individuals or groups and provide recommendations for accountability. However, this raises questions about the reliability and fairness of AI-generated judgments, as well as the ethical implications of delegating responsibility assessment to machines. By applying formal blameworthiness frameworks, we can better understand how LLMs can support human decision-making in these contexts while ensuring that their outputs align with established ethical principles. Some examples on these usecases are outlined in~\cite{dong_can_2024}, \cite{10.1093/jla/laae009}, and~\cite{posner2025judge}.
+
 \subsubsection{Large Language Models Apportioning Blame}
 
 % - Introduce the idea of LLMs not just judging blame but actively apportioning it among multiple agents.
@@ -370,12 +377,20 @@ By assigning quantifiable costs and probabilities to actions, such as applying s
 % - Mention that LLMs are being increasingly used in decision support and advisory roles, which makes their ability to apportion blame a practical and ethical concern.
 % - Highlight that this motivates empirical studies to evaluate how well LLMs can perform blame apportionment compared to human judgments and formal models.
 
+LLMs excel at processing Natural Language and generating contextually relevant outputs, which makes them suitable for tasks that involve evaluating complex scenarios and reasoning about responsibility. In multi-agent settings, where outcomes are often the result of collective actions, LLMs can be used to apportion blame among agents based on their contributions to the outcome. This task requires the model to consider various factors, such as the agents' actions, the context of the decision-making process, and the potential consequences of those actions. 
+
+Together with such applications come questions about the reliability and fairness of LLM-generated judgments, as well as the ethical implications of delegating responsibility assessment to machines. Although the question of whether LLMs can be considered morally responsible agents is particularly complex and controversial, since it involves philosophical, legal, and ethical considerations, we argue that it is possible to evaluate their behavior under simpler and more tractable settings. In particular, we can assess their ability to reason about blameworthiness in structured multi-agent scenarios, where the rules of the game are well-defined and the outcomes can be clearly measured.
+
+Although we purposly avoid the question about moral judgement and alignment of LLMs on blame apportionment tasks, by leveraging formal blameworthiness frameworks, we can test to some extent whether LLMs can approximate or support such a framework which is designed to capture human notions of blameworthiness. We also remark that the FH framework is not the only formal framework for blameworthiness, but it is a particularly useful one for our purposes because it provides a clear and mathematically rigorous way to reason about blame in multi-agent settings.
+
+In this work, we aim to compare the blameworthiness judgments made by LLMs with those predicted by the FH framework in a multi-agent committee scenario. By doing so, we can evaluate the extent to which LLMs can replicate or support human-like reasoning about responsibility and accountability in structured settings.
+
 \subsection{Research Questions}
 
-The main question that this work aims to address is: to what extent do LLM-based judges reproduce the structure of FH blameworthiness in a multi-agent committee? We address this through two sub-questions:
+With this background, the main question that this work aims to address is: to what extent do LLM-based judges reproduce the structure of FH blameworthiness in a multi-agent committee? We address this through two sub-questions:
 
 \begin{itemize}
-  \item \textbf{RQ1.} How does the blameworthiness assigned by the Friedenberg--Halpern committee framework vary across its parameters (belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size)?
+  \item \textbf{RQ1.} How does the blameworthiness assigned by the FH framework vary across its parameters (belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size), for the multi-agent committee scenario?
   \item \textbf{RQ2.} Do LLM-based judges placed in the same committee scenario assign blame that varies, in direction and in shape, as the framework's predictions specify?
 \end{itemize}
 
