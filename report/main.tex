@@ -8,6 +8,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
 \usepackage{setspace}
+\usepackage{stmaryrd}
 \usepackage[
   backend=biber,
   style=numeric,
@@ -51,9 +52,10 @@
 \maketitle
 
 \begin{abstract}
-  % Briefly state the motivation, approach, key findings, and significance.
+% This work tries to integrate a formal framework for blameworthiness apportionment in multi-agent settings with the statistical reasoning capabilities of large language models (LLMs). We replicate the Friedenberg--Halpern (FH) framework for blameworthiness in a committee of voters scenario, performing a parameter sensitivity analysis to understand how blameworthiness varies with belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size. We then evaluate LLM-based judges in the same scenario, assessing whether their blame assignments align with the FH framework's predictions. Our findings indicate that while LLMs capture the qualitative structure of blameworthiness, they exhibit quantitative miscalibration, highlighting both the potential and limitations of using LLMs for responsibility assessment in multi-agent contexts.
 \end{abstract}
 
+\newpage
 \tableofcontents
 \newpage
 
@@ -61,27 +63,269 @@
 
 \section{Introduction}
 
+\section{Background}
+
 %-----------------------------
 \subsection{Perspectives on Blame and Responsibility}
 
 % - Open by saying blameworthiness is not a single notion; different traditions emphasize control, alternatives, intention, causality, knowledge, and group structure.
-% - Use Frankfurt to mark the classic shift away from “could have done otherwise” as the core condition for responsibility.
-% - Use Fischer and Ravizza to show the control-based view: responsibility depends on actual guidance or ownership of the action.
-% - Add Malle as the psychological angle: blame is shaped by perceived intent, causality, foreseeability, and preventability.
-% - Move to Chockler and Halpern for the formal causal account: blame and responsibility can be measured in degrees using structural models.
-% - Then Halpern and Kleiman-Weiner: blame also depends on the agent’s epistemic state, not just causation.
-% - End with Friedenberg and Halpern: in multiagent settings, blame must be assigned to groups and then distributed to individuals, since outcomes are jointly produced.
-% - The overall narrative is: from philosophical responsibility, to psychological blame, to formal causal and epistemic models, to collective blame allocation.
 
-\subsection{Causal Models and Blameworthiness in Multi-agent Systems}
+Throughout the history of philosophy and psychology, the concepts of blame and moral responsibility have been widely studied from different angles. There is no universally accepted notion of blame, and the understanding on how humans apportion blame may vary depending on the context of the situation, traditions, and the subject's perspective. Despite this ambiguity, the concept of blame is commonly related to terms like intention, intervention, knowledge, control, alternatives, and group structure.
+
+% - Use Frankfurt to mark the classic shift away from “could have done otherwise” as the core condition for responsibility.
+
+Historically, the \textit{Principle of Alternate Possibilities} had widely accepted to determine if a person is moral responsible for an action on a given context. Roughly put, this principle states that an agent is morally responsible for an action only if they could have done otherwise. This perspective effectively focuses on the \textit{circumstances}, that is, if the circumstances (or external options) dictate that it is impossible for such an agent to have done otherwise, then automatically that agent is excused from moral responsibility.
+
+Opposing to this view, Harry G. Frankfurt proposed in 1969 a revision on this principle that shifted the focus from \textit{circumstances} towards \textit{motivations} \cite{frankfurt_alternate_2003}. His revised principle looks at the internal reasoning of the agent, instead of only looking at the context of the situation. He argued that an agent is not morally responsible for what he has done if he did it \textit{only} because he could not have done otherwise.
+
+% Parragraph below: keep?
+This new perspective lies at the core of what is known in philosophy as \textit{compatibilism}, a widely accepted philosophical current that has reframed the notion of moral responsibility in recent decades. Contrary to \textit{incompatibilism}, which claims that free will and causal determinism are mutually exclusive, \textit{compatibilism} consists on the belief that free will and determinism as mutually compatible and argues that, even if determinism is true, we still have a meaningful type of free will and moral responsibility.
+
+% - Use Fischer and Ravizza to show the control-based view: responsibility depends on actual guidance or ownership of the action.
+% --> The view of moral responsibility presented develops a distinction between two different types of control – regulative control and guidance control – discussed in Fischer’s earlier book The Metaphysics of Free Will.2 An agent has regulative control over her action when she has alternative actions available to her. Agents can have guidance control even when they have no alternative possibilities available to them. Fischer and Ravizza claim that guidance control is what is required for moral responsibility,3 and argue, also, that guidance control is compatible with causal determinism. This means, as Fischer and Ravizza stress, that moral responsibility is derived from what actually happens in the causal sequence leading to an agent’s action, not what could have happened, but didn’t.
+
+Fischer and Ravizza (1998) \cite{fischer_responsibility_1998} presented a different view on moral responsibility by distinguishing between two types of control (in the sense of the ability to decide over one's actions and omissions): regulative control and guidance control. Roughly, an agent has regulative control over their actions when alternative actions are available for the agent to take, and they have guidance control even when the agent has no alternative possibilities available. The authors claim that moral responsibility depends on the latter, and that guidance control is also compatible with causal determinism. In other words, they argue that moral responsibility derives from what actually happens in the causal sequence leading to an agent's actions, not what could have happened, but didn't.
+
+% - Add Malle as the psychological angle: blame is shaped by perceived intent, causality, foreseeability, and preventability.
+This philosophical idea that an agent can still be blamed for a bad action even if they had absolutely no other choice, was tested on a psychological level by Malle et al. (2014) \cite{malle_theory_2014}. Malle's ``Path Model'' proved that, when humans judge someone, our brains intuitively act like detectives moving through a mental checklist: we figure out if they caused the harm, if they meant to do it, and what their internal reasons were.
+
+% - Move to Chockler and Halpern for the formal causal account: blame and responsibility can be measured in degrees using structural models.
+To formalize the notion of responsibility and blame, Hannah Chockler and Joe Halpern (2004) \cite{chockler_responsibility_2004} came up with an elegant approach based on structural-models, shifting the perspective about causality from a binary concept into a graded degree of responsibility. The main idea of such framework lies on calculating the minimum number of counterfactual changes required for an agent's action to become the critical cause of an outcome. They additionally separate the terms \textit{responsibility} and \textit{blame} by incorporating an epistemic state. In other words, the authors propose a perspective where the blame of an agent is evaluated on what the agent actually knew (or believed), or should have known, before acting.
+
+% - Then Halpern and Kleiman-Weiner: blame also depends on the agent’s epistemic state, not just causation.
+Furthermore, Halpern and Kleiman-Weiner (2018) \cite{halpern_towards_2018} expand this idea by integrating the ideas of an expected \text{impact} of one's actions on an outcome, as well as the \textit{cost} of taking alternate actions. Specifically, they argue that agent's blameworthiness should be mitigated if preventing a negative outcome would have required an unreasonably high personal cost (e.g., risking one's life). Additionally, they define intention as the result of testing weather an agent would have chosen a different action if they believed their actions had no impact on the outcome.
+
+% - End with Friedenberg and Halpern: in multiagent settings, blame must be assigned to groups and then distributed to individuals, since outcomes are jointly produced.
+Finally, Friedenberg and Halpern (2019) \cite{friedenberg_blameworthiness_2019} extend this framework from individual blameworthiness assessment to complex, multi-agent scenarios, such as the ``Tragedy of the Commons'', where shared outcomes make assigning culpability difficult. Their approach splits blame in two: group blame and individual blame. They determine a group's overall blameworthiness by evaluating the feasibility and cost of the group coordinating to act differently. To split this collective blame among individual actors, they apply the Shapley value from cooperative game theory \cite{shapley_value_nodate}, apportioning blame to each agent based on their marginal contributions to the outcome.
+
+This work builds directly upon the framework proposed by Friedenberg and Halpern (FH from now on), adopting their definitions, methods, and examples. We apply this perspective through an experimental lens to study blameworthiness in complex scenarios, assessing how modern artificial intelligence systems behave compared to this theoretical model.
+
+\subsection{Causal Models and Blameworthiness}
+
+In this and the following section, we present a review of the relevant foundational mathematical ideas and concepts presented in the FH framework regarding blameworthiness in multi-agent settings \cite{friedenberg_blameworthiness_2019}. Throughout this work, we adopt the explanations and notation used by the authors in their paper.
 
 % - Introduce causal models as the formal language used to represent how outcomes depend on agents’ actions.
-% - Emphasize that blameworthiness in multi-agent settings is not just about one agent causing an outcome, but about how several agents jointly contribute to it (mention the tragedy of the commons)
-% - Explain that structural models allow one to isolate causal dependence and compare alternative action profiles.
-% - Motivate why degree-based notions are needed: in collective settings, agents may contribute unequally to the same outcome.
-% - Connect this section to the later allocation problem by noting that group-level blame must often be decomposed into individual shares.
 
-\subsection{The \textit{Committee of Voters} Example}
+FH reuse the causal model framework of Halpern and Pearl (2005) \cite{halpern_causes_2005} to build on top of it. Here we outline a review of the topic.
+
+\subsubsection{Actual Causality}
+
+Halpern and Pearl introduce the concept of \textit{actual causality}, and distinguish it from general or type causality. Without going deeper into this distinction, what is relevant is that actual causality refers to the specific relationship between events where one event is considered to directly cause another. It focuses on how particular events influence outcomes in specific contexts, and allows for a nuanced understanding of causation.
+
+\subsubsection{Structural Equations Modelling}
+
+% - Explain that structural models allow one to isolate causal dependence and compare alternative action profiles.
+\textit{Structural equations modeling} is a powerful tool used in statistics for modelling how variables affect one another in a system by defining a set of equations. HP (and therefore FH) use this at the core of their causal framework.
+
+A \textit{structural equations model} (SEM) has two different types of variables: \textit{exogenous} variables and \textit{endogenous} variables. Exogenous variables are those that, for a specific model, their causes are excluded from the model. Endogenous variables are those variables for which their causes are included in the model, and which can be either endogenous or exogenous themselves (their values are determined by factors in the model).
+
+A classical example used to understand the general idea behind structural equations is as follows. Imagine that Billy and Suzy are playing at throwing rocks to a glass bottle so that it breaks. Each of them have their own rock, and it suffices that one of them hits the bottle with the rock for it to break. Additionally, we assume both throwers have perfect accuracy (if they throw, they hit the bottle). In this case, we could start modelling the system by defining a binary variable \texttt{bottle\_broken} that is initially set to \texttt{False}. Then, we can define two more variables: \texttt{billy\_throws} and \texttt{suzy\_throws}. Intuitively, we can see that \texttt{billy\_throws} and \texttt{suzy\_throws} are causes and that \texttt{bottle\_broken} is the effect. See Figure~\ref{fig:sem_example} to see the SEM diagram.
+
+In this example, if we think of it as a \textit{structural equations model}, the variable \texttt{bottle\_broken} would be an \textit{endogenous} variable, while both \texttt{billy\_throws} and \texttt{suzy\_throws} would be \textit{exogenous} variables. The explanation for this is that we ignore what are the causes of Billy and Suzy throwing the rock (they may have bet on that, they may be bored, they may have stumbled with a bottle and some rocks, etc.), although we know they exist, we simply leave them out of the model. Instead, we do know which are the variables (inside the model) that affect the values of the variable \texttt{bottle\_broken}.
+
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.5\textwidth]{img/02_sem_example_1.png}
+  \caption{Illustration of the bottle example SEM.}
+  \label{fig:sem_example}
+\end{figure}
+
+\subsubsection{Mathematical Definition of a Causal Model}
+
+Formally, FH define a causal model $\mathcal{M}$ as a tuple $(\mathcal{S},\mathcal{F})$ where:
+
+\begin{itemize}
+  \item $\mathcal{S} = (\mathcal{U},\mathcal{V},\mathcal{R})$: a signature, composed of a finite but nonempty set $\mathcal{U}$ of exogenous variables, a finite but nonempty set $\mathcal{V}$ of endogenous variables, and a range function $\mathcal{R}$ that maps each variable $\mathcal{U} \cup \mathcal{V}$ to a set of possible values.
+  \item $\mathcal{F}$: a set of functions that map each endogenous variable $X \in \mathcal{V}$ to a function $F_X$ that determines the value of $X$ based on the values of other variables in $\mathcal{U} \cup \mathcal{V}$. Each function $F_X$ takes as input the values of all other variables in $\mathcal{U} \cup \mathcal{V}$ and outputs a value in $\mathcal{R}(X)$.
+  \item Then, $\mathcal{M}=(\mathcal{S},\mathcal{F})$ is a causal model that represents the relationships between variables in a system, where the functions in $\mathcal{F}$ capture the causal dependencies among the variables.
+\end{itemize}
+
+\subsubsection{Causal Models in Multi-Agent Settings}
+
+For scenarios with multiple agents, FH extend the signature of the causal model to be $\mathcal{S} = (\mathcal{U},\mathcal{V},\mathcal{R},\mathcal{G})$, where:
+
+\begin{itemize}
+  \item $\mathcal{G}: \mathcal{A} \rightarrow G$ associates an agent $ag \in G$ with an action variable in $\mathcal{A}$, where $G$ is the set of all agents in the system, and $\mathcal{A} \subseteq \mathcal{V}$ is the set of all (endogenous) action variables in the model. This allows for a clear representation of which agents are responsible for which actions.
+  \item The range of a variable $A \in \mathcal{A}$ is the set of actions available to the agent $\mathcal{G}(A)$.
+\end{itemize}
+
+For instance, if there are five members in a committee, and each of them can vote \texttt{yes} or \texttt{no}, then there will be action variables $A_1$ through $A_5$ with $\mathcal{G}(A_i) = ag_i$ for $i=1,\ldots,5$, and $\mathcal{R}(A_i) = \{\texttt{yes},\texttt{no}\}$.
+
+Furthermore, FH define a \textit{causal setting} as a tuple $(\mathcal{M},\vec{u})$ where $\mathcal{M}$ is a causal model and $\vec{u}$ is a context that assigns values to the exogenous variables in $\mathcal{U}$. This allows for the evaluation of causal relationships in specific contexts, enabling the analysis of how different agents' actions contribute to outcomes.
+
+\subsubsection{Reasoning About Interventions}
+
+Causal models allow for reasoning about interventions, which are hypothetical scenarios where we can formulate statements like ``if action $a$ was taken, the outcome would have been $\varphi$''. Formally:
+
+\begin{itemize}
+  \item An intervention is represented as a pair $(\vec{X} \gets \vec{x})$, where $\vec{X}$ is a set of variables and $\vec{x}$ is a set of values. This represents the action of setting the variables in $\vec{X}$ to the values in $\vec{x}$, regardless of their original values.
+  \item The outcome of an intervention is defined with the Greek letter $\varphi$, and represents a Boolean combination of primitive events (e.g., $X=x$) that can be evaluated in the modified causal model after the intervention.
+  \item The formula $[A \gets a]\varphi$ can then be read as ``if the action $A$ were set to $a$, then the outcome $\varphi$ would have occurred''.
+\end{itemize}
+
+
+\subsubsection{Blameworthiness}
+
+% - Single agent settings
+To answer the question of how blameworthy is an agent $ag$ for an outcome $\varphi$, FH define the notion of \textit{blameworthiness} as a function of the agent's actions, the context, and the causal model. Roughly, the blameworthiness of an agent $ag$ for an outcome $\varphi$ is denoted as $db^c_N(ag,a,\mathcal{E},\varphi)$ and is calculated based on the agent's actions ($a,a'$), the context ($c,N$), and the causal models embedded in the epistemic state of the agent ($\mathcal{E}$).
+
+Namely, we have that:
+
+\begin{itemize}
+  \item $ag$ is the agent whose blameworthiness is being evaluated.
+  \item $a$ is the action taken by the agent.
+  \item $a'$ is the action that the agent could have taken instead.
+  \item $c(a)$ maps actions to the cost of taking that action. FH admit that this cost function is not always easy to define, and that it may be subjective and context-dependent. For instance, in a voting scenario, the cost of voting \texttt{yes} or \texttt{no} may depend on the agent's personal beliefs, the social pressure they face, or the potential consequences of their vote.
+  \item $\mathcal{E}$ is the epistemic state of the agent, which captures their beliefs about the causal model and the context. Formally, $\mathcal{E} = (\Pr, \mathcal{K})$ is a probability distribution over a set of all causal settings that $ag$ considers possible ($\mathcal{K}$).
+  \item $\varphi$ is the outcome for which blameworthiness is being assessed.
+  \item $N$ is a balance parameter that trades off between the harm averted, and the cost incurred by the agent's actions. Similar to the cost function $c$, FH mention the difficulty of defining this parameter, and that sometimes it may not be possible to capture it clearly.
+\end{itemize}
+
+We then can define how likely an outcome $\varphi$ is to occur if the agent had taken action $a$ instead of $a'$, given an epistemic state $\mathcal{E}$, as $\delta^\mathcal{E}_{a,a',\varphi}$. Although FH do not provide a name for this term, we will refer to it as the \textit{impact} of the agent's action on the outcome $\varphi$ (this name may not be fully descriptive but serves our purposes). The impact of an agent's action on an outcome is therefore defined as:
+
+\begin{equation}
+  \delta^\mathcal{E}_{a,a',\varphi} = 
+  \max(0, \Pr(\llbracket [ A = a ]\,\varphi \rrbracket_\mathcal{K}) - \Pr(\llbracket [ A = a' ]\,\varphi \rrbracket_\mathcal{K}))
+\label{eq:impact}
+\end{equation}
+
+where:
+
+\begin{itemize}
+  \item For a given causal formula $\psi$, let $\llbracket \psi \rrbracket_\mathcal{K}$ denote the set of all settings in $\mathcal{K}$ where $\psi$ is true. 
+  \item Then, $\Pr(\llbracket [ A = a ]\,\varphi \rrbracket_\mathcal{K})$ is the probability that agent $ag$ ascribes to the outcome $\varphi$ occurring given that action $a$ is taken.
+\end{itemize}
+
+With this background, the blameworthiness (or degree of blameworthiness) of an agent $ag$ for an outcome $\varphi$, relative to an action $a'$, given that the agent took action $a$, is defined as:
+
+\begin{equation}
+  db^c_N(ag, a, a', \mathcal{E}, \varphi) = \delta^\mathcal{E}_{a,a',\varphi} \cdot \frac{N - \max (\text{c}(a') - \text{c}(a), 0)}{N}
+\label{eq:blameworthiness_single_agent}
+\end{equation}
+
+Finally, given a taken action $a$, the degree of blameworthiness of an agent $ag$ for an outcome $\varphi$ is defined as the maximum degree of blameworthiness over all possible alternative actions $a'$ that the agent could have taken: 
+
+\begin{equation}
+  db^c_N(ag, a, \mathcal{E}, \varphi) = \max_{a'} db^c_N(ag, a, a', \mathcal{E}, \varphi)
+\label{eq:blameworthiness_max}
+\end{equation}
+
+The intuition behind this definition is as follows:
+
+\begin{itemize}
+  \item The first term, $\delta^\mathcal{E}_{a,a',\varphi}$, captures the impact of the agent's action on the outcome $\varphi$. If the agent's action significantly increases the likelihood of the outcome occurring, this term will be larger, indicating a higher degree of blameworthiness.
+  \item The second term, $\frac{N - \max (\text{c}(a') - \text{c}(a), 0)}{N}$, captures the cost of taking an alternative action $a'$. If the alternative action is significantly more costly than the taken action, this term will be smaller, reducing the overall degree of blameworthiness.
+  \item By taking the maximum over all possible alternative actions $a'$, we ensure that we are considering the most blameworthy scenario for the agent.
+\end{itemize}
+
+\subsection{FH Blameworthiness in Multi-Agent Settings}
+
+The previous section presented the notion of blameworthiness in single-agent settings. However, in many real-world scenarios, outcomes are the result of the combined actions of multiple agents. In such cases, it is not sufficient to evaluate blameworthiness solely based on individual actions. Instead, we must consider how groups of agents collectively contribute to an outcome.
+
+FH refer to the ``Tragedy of the Commons'' \cite{hardin_tragedy_1968} as a classic example of a multi-agent setting where blameworthiness must be assessed at the group level. In this scenario, multiple agents exploit a shared resource, leading to its depletion and negative consequences for all. The blameworthiness of each agent cannot be evaluated in isolation, as the outcome is the result of their collective actions.
+
+As useful example, they present the Fishermen problem, where in a lake full of fish and fishermen, it is of common interest that fish don't run out. For one reason or another, all fishermen know that if they fish more than 10 fish on a given year, the fish will effectively run out and there will be no fishes to fish the next year. Still, since all of them also believe that there is a high chance the rest of the fishermen will overfish, then each of them decides to overfish, leading to the common resource running out for the next year. Although it was because the actions of each of the fishermen that the fish ran out, it is reasonable to think that they acted sensibly, since the belief about others overfishing was accurate (in the scenario, it is something that actually happened). 
+
+Therefore, we may think that they cannot be blamed individually. Still, the group as a whole is certainly blameworthy for the outcome, and thus each of them must have a certain degree of blame. This conclusion captures the main idea that motivates an extension to the blameworthiness framework, such as that of FH, where complex multi-agent settings are addressed more appropriately.
+
+FH claim that in order to assign blame to the group (and later on to each individual agent), it is necessary to assess the cost to the fishermen of coordinating their actions (e.g., creating regulations, installing sensors to monitor the number of fish, etc.). FH also mention that computing such costs can be quite difficult in general. To simplify the problem, they directly associate a cost with the set of epistemic states (distributions over causal settings) that are viewed as the possible outcomes of attempts to coordinate. 
+
+By doing so, the framework abstracts away the complex details of real-world collaboration and focuses directly on the expected cost of achieving a more favorable epistemic state. Once this cost and the resulting impact on the outcome are established, it is possible to compute a formal degree of \textit{group blameworthiness}. However, because actions are ultimately taken by individuals, this group-level blame must then be fairly apportioned among the specific agents involved. To achieve this, FH utilize the Shapely \cite{shapley_value_nodate} concept from cooperative game theory to calculate each agent's individual share of the blame based on their marginal contributions to various coalitions. 
+
+To illustrate how these abstract concepts of coordination, costs, and apportionment play out in a more concise scenario, the following sections will formally define these metrics and apply them to a simplified model: a committee of voters \cite{friedenberg_blameworthiness_2019}. In this voting setting, which is the core foundation that this project builds on top of, the complex idea of ``coordinating an alternative epistemic state'' is cleanly reduced to specific, quantifiable actions. In particular, subsets of agents can form coalitions to apply social pressure (for a specific cost) to increase the probability of a positive vote from others, or an individual can incur a personal cost to definitively switch their own vote. This abstraction provides an ideal test environment to explore the mathematical nuances of the FH framework without getting lost in the intractable variables of real-world coordination. More about this is detailed in the next sections.
+
+\subsubsection{Group Blameworthiness}
+
+To extend the blameworthiness framework to settings where multiple agents can coordinate, FH shift the focus from individual actions to \textit{epistemic states} which pertain to collective actions. The degree of blameworthiness for a group of agents $Ag'$ for an outcome $\varphi$ is defined as $gb^c_N(Ag',\mathcal{E}_1,\varphi)$ and is calculated based on the actual epistemic state ($\mathcal{E}_1$), potential alternative epistemic states ($\mathcal{E}_2$), and the cost of coordination.
+
+Specifically, we have that:
+
+\begin{itemize}
+  \item $Ag'$ is the subset of agents whose collective blameworthiness is being evaluated, where $Ag' \subseteq Ag$ and $Ag$ is the set of all agents.
+  \item $\mathcal{E}_1 = (\Pr_1, \mathcal{K}_1)$ is the actual epistemic state of the group.
+  \item $\mathcal{E}_2 = (\Pr_2, \mathcal{K}_2)$ is the alternative epistemic state that the group could have brought about through coordination.
+  \item $c(Ag', \mathcal{E})$ maps a subset of agents and an epistemic state to the expected cost of the coordination actions required for the agents in $Ag'$ to bring about $\mathcal{E}$.
+  \item $\varphi$ is the outcome for which blameworthiness is being assessed.
+  \item $N$ is the balance parameter trading off between the harm averted and the cost incurred.
+\end{itemize}
+
+Similar to the single-agent setting, we define the \textit{impact} of moving from epistemic state $\mathcal{E}_1$ to $\mathcal{E}_2$ on the outcome $\varphi$. This represents how much more likely $\varphi$ was under the actual state compared to the alternative state:
+
+\begin{equation}
+  \delta_{\mathcal{E}_1,\mathcal{E}_2,\varphi} = \max(0, \text{Pr}_1(\llbracket \varphi \rrbracket_{\mathcal{K}_1}) - \text{Pr}_2(\llbracket \varphi \rrbracket_{\mathcal{K}_2}))
+\label{eq:impact_group}
+\end{equation}
+
+With this background, the degree of blameworthiness of a group $Ag'$ for an outcome $\varphi$, relative to an alternative epistemic state $\mathcal{E}_2$, given the actual epistemic state $\mathcal{E}_1$, is defined as:
+
+\begin{equation}
+  gb^c_N(Ag', \mathcal{E}_1, \mathcal{E}_2, \varphi) = \delta_{\mathcal{E}_1,\mathcal{E}_2,\varphi} \cdot \frac{N - \max (c(Ag', \mathcal{E}_2) - c(Ag', \mathcal{E}_1), 0)}{N}
+\label{eq:blameworthiness_group_relative}
+\end{equation}
+
+Finally, given an actual epistemic state $\mathcal{E}_1$, the degree of blameworthiness of a group $Ag'$ for an outcome $\varphi$ is defined as the maximum degree of blameworthiness over all possible alternative epistemic states $\mathcal{E}_2$ that the group could have coordinated to achieve (where the cost $c(Ag', \mathcal{E}_2)$ is finite):
+
+\begin{equation}
+  gb^c_N(Ag', \mathcal{E}_1, \varphi) = \max_{\mathcal{E}_2} gb^c_N(Ag', \mathcal{E}_1, \mathcal{E}_2, \varphi)
+\label{eq:blameworthiness_group_max}
+\end{equation}
+
+The intuition behind this definition strongly parallels the single-agent case:
+
+\begin{itemize}
+  \item The first term, $\delta_{\mathcal{E}_1,\mathcal{E}_2,\varphi}$, captures the impact of the group's coordination on the outcome $\varphi$. If an alternative coordination strategy significantly decreases the likelihood of the negative outcome, this term grows, indicating higher blame for failing to coordinate.
+  \item The second term captures the cost penalty. If the alternative coordination state $\mathcal{E}_2$ is significantly more costly to achieve than the actual state $\mathcal{E}_1$, the overall degree of group blameworthiness is reduced.
+  \item By taking the maximum over all finite-cost alternative states $\mathcal{E}_2$, we identify the most blameworthy failure of coordination for that specific group.
+\end{itemize}
+
+An important note from FH is regarding \textit{whose} epistemic state is being considered. So far we have not defined which agent's beliefs are used to evaluate the probabilities in the impact term. For individual blameworthiness, it is clear that the agent's own epistemic state should be used. However, for group blameworthiness, FH argue that it is reasonable to use the epistemic state of the \textit{society}, which they define as the view of what a reasonable agent would believe about the situation. The ambiguity of this definition is acknowledged, but FH suggest that it is a reasonable approximation for evaluating collective blameworthiness in multi-agent settings, and it is one we can work with for this project's purposes.
+
+\subsubsection{Apportioning Blame Among Agents}
+
+Once the blameworthiness of a group is established, the next natural question is how this collective blame should be divided among its individual members. To solve this, FH utilize a standard concept from cooperative game theory: the Shapley value.
+
+To apply the Shapley value, we first must define the \textit{marginal contribution} of an individual agent $ag_j$ to a specific coalition of agents $Ag'$. This measures how much the group's blameworthiness increases when agent $ag_j$ is included in the coalition. For an agent $ag_j \in Ag'$, their marginal contribution is defined as:
+
+\begin{equation}
+  mb^{c,\mathcal{E}}_N(j, Ag', \varphi) = gb^c_N(Ag', \mathcal{E}, \varphi) - gb^c_N(Ag' \setminus \{ag_j\}, \mathcal{E}, \varphi)
+\label{eq:marginal_contribution}
+\end{equation}
+
+Similarly, if $ag_j \notin Ag'$, their marginal contribution is defined as:
+
+\begin{equation}
+  mb^{c,\mathcal{E}}_N(j, Ag', \varphi) = gb^c_N(Ag' \cup \{ag_j\}, \mathcal{E}, \varphi) - gb^c_N(Ag', \mathcal{E}, \varphi)
+\label{eq:marginal_contribution_not_in_coalition}
+\end{equation}
+
+Using these marginal contributions, the individual degree of blameworthiness for an agent $ag_j$ (denoted as $db^{c,\mathcal{E}}_N(j, \varphi)$) is calculated by taking a weighted sum of their marginal contributions to all possible coalitions they could be a part of:
+
+\begin{equation}
+  db^{c,\mathcal{E}}_N(j, \varphi) = \sum_{\{Ag' \subseteq Ag : ag_j \in Ag'\}} \frac{(|Ag'|-1)! (|Ag|-|Ag'|)!}{|Ag|!} mb^{c,\mathcal{E}}_N(j, Ag', \varphi)
+\label{eq:shapley_blame}
+\end{equation}
+
+The intuition behind this apportionment is as follows:
+
+\begin{itemize}
+  \item The Shapley value essentially calculates the average marginal contribution of the agent across all possible sub-coalitions they could join.
+  \item The fractional term acts as a combinatorial weight, satisfying the \textit{Efficiency} axiom \cite{friedenberg_blameworthiness_2019}, which ensures that the total blame distributed among individuals equals the total group blameworthiness of the entire set of agents $Ag$.
+  \item If an agent's participation in a coalition drastically changes the group's ability to prevent the outcome (e.g., they have a low personal cost to change their vote), their marginal contribution and thus their individual share of the blame will be proportionally higher.
+\end{itemize}
+
+\subsubsection{The \textit{Committee of Voters} Example}
+
+To ground the theoretical framework, FH introduce a straightforward scenario: a committee of voters deciding whether to pass a bill. This scenario serves as an intuitive illustration of collective decision-making and shared responsibility. In this setting, a bill requires a minimum number of \texttt{yes} votes to pass (e.g., 4 out of 7 members). If the bill fails because a majority votes \texttt{no}, the harmful outcome is not the result of any single voter's isolated action, but rather the structural combination of their choices.
+
+Figure below shows a visual of the committee example.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{img/02_committee_1.png}
+  \caption{Illustration of the Committee of Voters Example.}
+  \label{fig:committee_example}
+\end{figure}
 
 % - Present the committee of voters example as an intuitive illustration of collective decision-making and shared responsibility.
 % - Use it to show that a harmful outcome may depend on a combination of votes rather than any single voter alone.
@@ -89,22 +333,18 @@
 % - Explain that the example motivates apportionment questions: who is blameworthy, and by how much?
 % - Keep the discussion focused on why the example is useful as a bridge from abstract theory to multiagent blame allocation.
 
-\subsection{The FH Blameworthiness Framework}
+This dynamic makes the distinction between individual causal contribution and group-level blame especially clear. While a single agent changing their vote might not have altered the outcome on its own, the group as a whole is entirely responsible for the failure. Consequently, the scenario perfectly motivates the core questions of apportionment: \textit{given that the group failed to coordinate the necessary votes, which specific agents are blameworthy, and by exactly how much?}.
 
-% - Formalise the framework here -- right after the intuitive committee example and *before* the research questions, since RQ1 quantifies over this object and Results reference its quantities. Keep equations light: definitions plus the two key formulas.
-% - Define the epistemic state (per-agent probability of voting yes) and the outcome probability (bill passes iff >= threshold yes-votes).
-% - Define group blameworthiness gb = delta * (N - cost) / N, where delta is the achievable increase in outcome probability a coalition can cause (via social pressure and/or the target switching its vote), cost is the coalition's action cost, and N is the balance parameter trading off harm averted against cost incurred.
-% - Define individual blameworthiness as the Shapley apportionment of gb over coalitions containing the target agent.
-% - Name the parameters that the rest of the report varies: belief (p0), vote, switch cost (c_sw), stakes (N), pressure effectiveness (alpha), threshold, group size.
+By assigning quantifiable costs and probabilities to actions, such as applying social pressure or voluntarily switching a vote, the committee example acts as a practical artifact that moves the discussion from the abstract mathematics of epistemic states directly into a concrete multi-agent setting with computable blameworthiness. This makes it a useful tool for evaluating the FH framework and, as we propose later, for assessing how well modern AI systems can replicate or support human judgments of responsibility in structured scenarios.
 
 \subsection{Responsibility of AI Systems}
 
 % As AI systems are increasingly embedded into our society, we argue that as a means to support ethical and humancentred AI, it is necessary to develop precise models for reasoning about responsibility of AI systems (Dastani, 2023)
 % - Argue that as AI systems become embedded in society, responsibility questions become practically important rather than purely theoretical.
-% - Frame the section around the need for precise models of responsibility and blame to support ethical and human-centred AI.
+% - Frame the subsection around the need for precise models of responsibility and blame to support ethical and human-centred AI.
 % - Emphasize that AI systems may act autonomously, interact with other agents, and influence outcomes in ways that resemble multiagent settings.
 % - Note that this raises questions about whether responsibility lies with the system itself, its designers, deployers, or users.
-% - Use this section to motivate why formal blameworthiness frameworks are useful for AI governance and accountability.
+% - Use this subsection to motivate why formal blameworthiness frameworks are useful for AI governance and accountability.
 
 \subsubsection{Large Language Models as Agents}
 
