@@ -44,7 +44,7 @@
   \vspace{0.5cm}
   \large Advanced Topics in Intelligent Interactive Systems \\
   \large Independent Studies Report}
-\author{Rodrigo Cort\'es S\'anchez}
+\author{Rodrigo Cort\'es S\'anchez\thanks{Universitat Pompeu Fabra (UPF)} \and Jorge Lobo\thanks{Supervisor, Universitat Pompeu Fabra (UPF)}}
 \date{\today}
 
 \begin{document}
@@ -56,8 +56,8 @@ This work tries to integrate a formal framework for blameworthiness apportionmen
 \end{abstract}
 
 
-\tableofcontents
-\newpage
+% \tableofcontents
+% \newpage
 
 %-----------------------------
 
@@ -115,11 +115,11 @@ Halpern and Pearl introduce the concept of \textit{actual causality}, and distin
 \subsubsection{Structural Equations Modelling}
 
 % - Explain that structural models allow one to isolate causal dependence and compare alternative action profiles.
-\textit{Structural equations modeling} is a powerful tool used in statistics for modelling how variables affect one another in a system by defining a set of equations. HP (and therefore FH) use this at the core of their causal framework.
+\textit{Structural equations modeling} is a powerful tool used in statistics for modelling how variables affect one another in a system by defining a set of equations. HP (and therefore FH) use this at the core of their causal framework. In this subsection we limit ourselves to a brief overview of the topic, and refer the reader to the original work of Halpern and Pearl (2005) \cite{halpern_causes_2005} for a more detailed explanation.
 
-A \textit{structural equations model} (SEM) has two different types of variables: \textit{exogenous} variables and \textit{endogenous} variables. Exogenous variables are those that, for a specific model, their causes are excluded from the model. Endogenous variables are those variables for which their causes are included in the model, and which can be either endogenous or exogenous themselves (their values are determined by factors in the model).
+A \textit{structural equations model} (SEM) has two different types of variables: \textit{exogenous} variables and \textit{endogenous} variables. Exogenous variables are those that, for a specific model, their causes are excluded from the model. Endogenous variables are those variables for which their causes are included in the model (their values are determined by factors in the model), and which can be either endogenous or exogenous themselves.
 
-A classical example used to understand the general idea behind structural equations is as follows. Imagine that Billy and Suzy are playing at throwing rocks to a glass bottle so that it breaks. Each of them have their own rock, and it suffices that one of them hits the bottle with the rock for it to break. Additionally, we assume both throwers have perfect accuracy (if they throw, they hit the bottle). In this case, we could start modelling the system by defining a binary variable \texttt{bottle\_broken} that is initially set to \texttt{False}. Then, we can define two more variables: \texttt{billy\_throws} and \texttt{suzy\_throws}. Intuitively, we can see that \texttt{billy\_throws} and \texttt{suzy\_throws} are causes and that \texttt{bottle\_broken} is the effect. See Figure~\ref{fig:sem_example} to see the SEM diagram.
+A classical example used to understand the general idea behind causality, and its representation in SEMs, is as follows. Imagine that Billy and Suzy are playing at throwing rocks to a glass bottle so that it breaks. Each of them have their own rock, and it suffices that one of them hits the bottle with the rock for it to break. Additionally, we assume both throwers have perfect accuracy (if they throw, they hit the bottle). In this case, we could start modelling the system by defining a binary variable \texttt{bottle\_broken} that is initially set to \texttt{False}. Then, we can define two more variables: \texttt{billy\_throws} and \texttt{suzy\_throws}. Intuitively, we can see that \texttt{billy\_throws} and \texttt{suzy\_throws} are causes and that \texttt{bottle\_broken} is the effect. See Figure~\ref{fig:sem_example} to see the SEM diagram.
 
 In this example, if we think of it as a \textit{structural equations model}, the variable \texttt{bottle\_broken} would be an \textit{endogenous} variable, while both \texttt{billy\_throws} and \texttt{suzy\_throws} would be \textit{exogenous} variables. The explanation for this is that we ignore what are the causes of Billy and Suzy throwing the rock (they may have bet on that, they may be bored, they may have stumbled with a bottle and some rocks, etc.), although we know they exist, we simply leave them out of the model. Instead, we do know which are the variables (inside the model) that affect the values of the variable \texttt{bottle\_broken}.
 
@@ -338,10 +338,10 @@ FH additionally provide detailed examples of computations for both group and ind
 
 \begin{table}[h]
   \centering
-  \caption{Conditions for the Committee of Voters Example, as provided by FH~\cite{friedenberg_blameworthiness_2019}, where, according to the agent's beliefs: $p_0$ is the initial probability of other agents voting \texttt{Yes}, $c_\text{coallition}$ is the group's cost of forming a coalition of $n$ agents, $\alpha$ is the increase in probability due to social pressure, $c_\text{switch}$ is the cost of the agent switching its own vote, and Vote indicates the agent's actual vote.}
+  \caption{Conditions for the Committee of Voters Example, as provided by FH~\cite{friedenberg_blameworthiness_2019}, where, according to the agent's beliefs: $p_0$ is the initial probability of other agents voting \texttt{Yes}, $c_\text{coalition}$ is the group's cost of forming a coalition of $n$ agents, $\alpha$ is the increase in probability due to social pressure, $c_\text{switch}$ is the cost of the agent switching its own vote, and Vote indicates the agent's actual vote.}
   \begin{tabular}{|c|c|c|c|c|c|}
     \hline
-    Agent & $p_0$ & $c_\text{coallition}$ & $\alpha$ & $c_\text{switch}$ & Vote \\
+    Agent & $p_0$ & $c_\text{coalition}$ & $\alpha$ & $c_\text{switch}$ & Vote \\
     \hline
     $ag_1$ & 0.6 & $100 \times n$ & 5\% & 2000 & No  \\
     $ag_2$ & 0.6 & $100 \times n$ & 5\% & 500 & No  \\
@@ -418,11 +418,11 @@ LLMs excel at processing Natural Language and generating contextually relevant o
 
 Together with such applications come questions about the reliability and fairness of LLM-generated judgments, as well as the ethical implications of delegating responsibility assessment to machines. Although the question of wether LLMs can be considered morally responsible agents is particularly complex and controversial, since it involves philosophical, legal, and ethical considerations, we argue that it is possible to evaluate their behavior under simpler and more tractable settings. In particular, we can assess their ability to reason about blameworthiness in structured multi-agent scenarios, where the rules of the game are well-defined and the outcomes can be clearly measured.
 
-Although we purposly avoid the question about moral judgement and alignment of LLMs on blame apportionment tasks, by leveraging formal blameworthiness frameworks, we can test to some extent whether LLMs can approximate or support such a framework which is designed to capture human notions of blameworthiness. We also remark that the FH framework is not the only formal framework for blameworthiness, but it is a particularly useful one for our purposes because it provides a clear and mathematically rigorous way to reason about blame in multi-agent settings.
+Although we purposly avoid the question about moral judgement and alignment of LLMs on blame apportionment tasks, by leveraging formal blameworthiness frameworks, we can test to some extent whether LLMs can approximate or support such a framework which is designed to capture human notions of blameworthiness. We also remark that the FH framework is not the only formal framework for blameworthiness, but it is a particularly useful one for our purposes because it provides a clear and rigorous way to reason about blame in multi-agent settings.
 
 In this work, we aim to compare the blameworthiness judgments made by LLMs with those predicted by the FH framework in a multi-agent committee scenario. By doing so, we can evaluate the extent to which LLMs can replicate or support human-like reasoning about responsibility and accountability in structured settings.
 
-\subsection{Research Questions}
+\subsection{Research Questions}\label{sec:research_questions}
 
 With this background, the main question that this work aims to address is: to what extent do LLM-based judges reproduce the structure of FH blameworthiness in a multi-agent committee? We address this through two sub-questions:
 
@@ -436,19 +436,20 @@ With this background, the main question that this work aims to address is: to wh
 \section{Methodology}
 
 To address the research questions, we first replicate the \textit{Committee of Voters} scenario from FH Blameworthiness \cite{friedenberg_blameworthiness_2019} to establish a baseline for blameworthiness calculations in a multi-agent setting. We then conduct a parameter sensitivity analysis to explore how blameworthiness varies with changes in the framework's parameters. Finally, we evaluate LLM-based judges by placing them in the same committee scenario and eliciting their blameworthiness judgments. Subsection~\ref{sec:replication} details the python implementation that aims to replicate the committee example, while Subsection~\ref{sec:parameter_sensitivity} describes the parameter sensitivity analysis. Subsection~\ref{sec:llm_judges} outlines the experimental setup for evaluating LLMs with respect to the apportionment of blameworthiness.
-
 \subsection{Replication of the \textit{Committee of Voters} Example \small (FH Blameworthiness, 2023)}\label{sec:replication}
 
 % - Note what was replicated and what was demonstrated, including the FH framework's ability to compute blameworthiness in multi-agent settings.
 % - Particularly, explicitly note how "epistemic state" is represented in the implementation, and how it is used to compute blameworthiness. Explain probability, coalitions of agents, and how these relate to causal models.
 % - Describe how each parameter translates into the implementation, and how the blameworthiness is computed for each agent.
 % - Explain technologies used and where to find the code (github repo)
-% - Note that the framework leaves the balance parameter N unspecified beyond N > max(cost). Report the N-sweep showing the agent blame *ordering* is invariant to N, which justifies treating the framework as a single well-defined oracle for RQ1 and RQ2.
+% - Note that the framework leaves the balance parameter N unspecified beyond N > max(cost). Report the N-sweep showing the agent blame *ordering* is invariant to N, which justifies treating the framework as a single well-defined FH baseline for RQ1 and RQ2.
 % - State that, after reverse engineering the value of N, our implementation recovers the paper's reported per-agent blame values (ag1-ag6, Sec 3.4), establishing faithfulness; this is a verification step, not a finding.
 
 Figure~\ref{fig:committee_replication} illustrates the python implementation of the Committee of Voters example in a high-level diagram of its components. The implementation faithfully replicates the FH framework's calculations for blameworthiness in a multi-agent setting by following the original methodology. In this implementation, the epistemic state is represented as a probability distribution over possible causal settings, capturing the agents' beliefs about the likelihood of various outcomes based on their actions and the actions of others. The implementation allows for the specification of parameters such as belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size, enabling a comprehensive exploration of how these factors influence blameworthiness. 
 
-The blameworthiness for each agent is computed by evaluating their individual contributions to the outcome, taking into account the collective actions of the group and the associated costs of coordination. The code is available in a public GitHub repository \cite{rcrtss2025miis} (particularly, in the \texttt{framework/committee.py} file), providing transparency and reproducibility for the research. Additionally, a sweep of the balance parameter N was conducted, demonstrating that the ordering of agent blameworthiness remains invariant across different values of N, thereby justifying the treatment of the framework as a benchmark for RQ1 and RQ2. After reverse engineering the value of N  (yielding a value of $5000$), our implementation successfully recovers the per-agent blame values reported in FH (Subsection~\ref{sec:committee_example}), establishing the faithfulness of our replication and providing a verification step for the framework's calculations.
+The code is available in a public GitHub repository \cite{rcrtss2025miis} (particularly, in the \texttt{framework/committee.py} file), providing transparency and reproducibility for further research. Translating the abstract mathematics of the FH framework into functional code requires relying on the computational exhaustion of finite sets. For instance, to calculate the outcome probability (which represents the epistemic state) the script evaluates all $2^7 = 128$ possible voting combinations for the 7-agent committee. For each ``world'' where the outcome is achieved ($\ge 4$ \texttt{yes} votes), the algorithm computes its exact mathematical likelihood based on the base beliefs of the agents and calculates the cumulative probability. To compute group blameworthiness, the code programmatically searches the space of alternative actions for a given coalition. It calculates the coordination cost (e.g., applying social pressure or switching a vote) and the new outcome probability for every hypothetical action, evaluating the theoretical trade-off formula and storing the maximum resulting value across all valid alternatives.
+
+Similarly, the combinatorial nature of the Shapley value equation is implemented through finite exhaustion to apportion individual blame. The algorithm isolates a target agent and generates every possible coalition of the remaining agents. For each subset, the script computes the group blameworthiness both with and without the target agent. The difference between these two values yields the agent's marginal contribution. Then, this contribution is multiplied by the Shapley weights (to account fairly for different coalition sizes) and summed across all permutations.
 
 \begin{figure}[h]
   \centering
@@ -456,11 +457,11 @@ The blameworthiness for each agent is computed by evaluating their individual co
   \caption{High-level illustration of the Committee of Voters Example python implementation.}~\label{fig:committee_replication}
 \end{figure}
 
-This verification step consisted in running the script with the parameters reported in Table~\ref{tab:committee_example_conditions} and comparing the resulting blameworthiness values with those reported in Table~\ref{tab:committee_example_results}. By setting the balance parameter N to $5000$, we were able to recover the same blameworthiness values for each agent, confirming that our implementation accurately replicates the FH framework's calculations. The results of this verification step are summarized in Table~\ref{tab:replication_verification}, which shows the computed blameworthiness values alongside the original values reported by FH. The close alignment between these values demonstrates the correctness of our implementation and provides a solid foundation for further analysis in the subsequent sections.
+Additionally, a sweep of the balance parameter N was conducted to reverse engineer the value of N. We found that with a value of $N=5000$, our implementation successfully recovers each of the blame values reported for each agent in FH (Subsection~\ref{sec:committee_example}). We assume this value for subsequent analyses. With this, we establish the faithfulness of our replication and provide a verification step for the framework's calculations. The results of this verification step are summarized in Table~\ref{tab:replication_verification}, which shows the computed blameworthiness values alongside the original values reported by FH. The close alignment between these values demonstrates the correctness of our implementation and provides a solid foundation for further analysis in the subsequent sections.
 
 \begin{table}[h]
   \centering
-  \caption{Verification of the Committee of Voters Example replication, comparing the computed blameworthiness values with those reported by FH, where: $gb$ is the group blameworthiness and $db_j$ is the individual blameworthiness for agent $ag_j$.}
+  \caption{Verification of the Committee of Voters Example replication with the balance parameter $N=5000$, comparing the computed blameworthiness values with those reported by FH, where: $gb$ is the group blameworthiness and $db_j$ is the individual blameworthiness for agent $ag_j$.}
   \begin{tabular}{|c|c|c|}
     \hline
     Agent & FH Reported Blameworthiness ($gb$/$db_j$) & Computed Blameworthiness ($gb$/$db_j$) \\
@@ -482,32 +483,124 @@ This verification step consisted in running the script with the parameters repor
 % - Note that this analysis is designed to explore the sensitivity of blameworthiness to each parameter, providing a comprehensive understanding of the framework's behavior beyond the single configuration reported in the paper.
 % - Describe the parameter ranges and the rationale for choosing them, including belief, vote, switch cost, stakes, pressure effectiveness, threshold, and group size.
 
-\subsection{LLM-based Judges for Blameworthiness Apportionment}\label{sec:llm_judges}
+To address RQ1, we conduct a comprehensive parameter sensitivity analysis of the FH framework. This analysis sweeps across the framework's parameters to observe their isolated and interacting effects on individual and group blameworthiness. This approach allows us to rigorously map the model's behavioral boundaries and sensitivity far beyond the single, static configuration presented in the original Committee of Voters example~\cite{friedenberg_blameworthiness_2019}, providing a more general understanding of how the framework behaves under a variety of conditions.
 
-% - Describe the experimental setup for evaluating LLM-based judges, referring to the prompts used, the challenges regarding wording, and the need for consistency across scenarios.
-% - Clarify the framing: the model is placed in an agent's position within the committee scenario and asked to *judge* its own blameworthiness, so it acts as agent and judge at once. State this explicitly so the agent/judge distinction is not muddled.
-% - Describe the scenarios presented, the skins/framings (s01 health, s02 grant, s03 board), and how blameworthiness is elicited from the models (0-100 score).
-% - Words on how parameter values must be expressed in natural language only (no numbers in prompts); subjective parameters are ordinal labels mapped to wordings, and that mapping is itself what the experiment tests.
-% - Note that to recover the value the model reasoned from, we also ask it for its own estimate (inferred p0, alpha, cost), enabling an assumption-free oracle comparison (oracle_at_inferred) alongside the nominal one (oracle_at_reference).
-% - Explain that this was repeated across models, scenarios, phrasings, and repetitions.
+Specifically, we systematically vary seven key parameters: initial belief $p_0$ (the prior probability of an agent voting \texttt{yes}), the actual vote cast, personal switch cost $c_\text{switch}$, the stakes or balance parameter $N$, pressure effectiveness $\alpha$ (the marginal increase in probability per unit of social pressure), the cost of creating coalitions $c_\text{coalition}$, the voting threshold $T$, and overall group size $n$. This analysis served, in general, two purposes: first, to provide a comprehensive understanding of how blameworthiness varies with each parameter, and second, to establish a baseline for comparison with LLM-based judges in RQ2. The results of this analysis are presented in Section~\ref{sec:results}, where we discuss the observed patterns.
 
-% Headline sweep (RQ2, shape):
-% - The headline manipulation sweeps belief (p0) across all models x scenarios; this tests whether the LLM blame curve reproduces the framework's non-monotonic shape.
+\subsection{LLM Judge Evaluation for Blameworthiness Apportionment}\label{sec:llm_judges}
 
-% Validation arms (RQ2, direction of shift):
-% - Describe the one-variable-at-a-time (OFAT) validation arms that change a single held variable -- own vote, pressure effectiveness (alpha), and switch cost / stakes -- and check the LLM curve shifts in the direction the oracle curve shifts.
-% - State the coverage honestly: the validation arms were run for one model (qwen) and one scenario (s01) only, so they are indicative, not confirmatory (see Limitations).
-% - List the models, scenarios, and per-arm conditions.
+The comparative evaluation of LLM-based judges for blameworthiness apportionment (addressing RQ2), while taking the results of the parameter sensitivity analysis into account, is the core objective of this work. As outlined in Section~\ref{sec:research_questions}, this evaluation aims to understand how well LLMs can approximate the blameworthiness assessments provided by the FH framework. 
 
-\section{Results}
+The main idea behind this evaluation is to task a Large Language Model with the role of a judge who has to decide how blameworthy is a group of agents, and how to apportion that blame among the individual agents, given a specific scenario. Specifically, the LLM is provided with a description of the committee scenario, including a natural language representation of the parameters that define the agents' beliefs, votes, costs, and other relevant factors. The model is then asked to assign blameworthiness scores to each agent on a scale from 0 to 100, reflecting their perceived responsibility for the outcome.
+
+Several challenges arise in such an evaluation. The following points summarize the most relevant obstacles and considerations considered in the design of the experiment:
+
+\begin{itemize}
+  \item \textbf{Prompt Design:} The prompts used to elicit blameworthiness judgments from the LLM must be carefully crafted to ensure clarity and consistency. Variations in wording can lead to different interpretations of the scenario, which may affect the model's responses. Therefore, multiple prompt phrasings are tested to assess the robustness of the model's judgments. 
+  
+  \item \textbf{Scenario Diversity:} The evaluation includes multiple scenarios (see Table~\ref{tab:scenarios}) with different skins or framings. Each scenario presents unique challenges and contexts that may influence the model's blameworthiness assessments. Consistency across the results for the different scenarios is essential for drawing meaningful conclusions about the model's performance.
+  
+  \item \textbf{Natural Language Parameterization:} All parameter values must be expressed in natural language only, without using numerical representations in prompts. Ordinal labels are mapped to specific wordings, and the model's ability to interpret these mappings is itself a subject of the evaluation. This approach tests the model's capacity to reason about blameworthiness based on qualitative descriptions rather than quantitative inputs. (see Figure~\ref{fig:parameter_mapping} for an example on the mapping of ordinal labels to natural language descriptions).
+  
+  \item \textbf{FH Baseline Comparison:} Crucially, to recover the values from which the model reasoned, we also ask it for its own estimates of inferred parameters (e.g., $p_0$, $\alpha$, cost). This becomes highly relevant for the evaluation, as it provides a way of anchoring a given response to a specific parameter value, which is necessary for comparing the model's judgments to the FH framework's predictions.
+  
+  \item \textbf{Repetition Across Conditions:} The evaluation is repeated across different models, scenarios, phrasings, and repetitions to ensure that findings are robust and not artifacts of specific conditions or prompt designs.
+\end{itemize}
+
+% A hospital board of *n* attending physicians must authorize a treatment; authorization needs at least `pass_threshold` sign-offs. The board falls short, the treatment is withheld, and the evaluator judges how blameworthy the focal physician (**Dr. Aris**) is. Structurally isomorphic to the Friedenberg–Halpern committee example.
+% A review panel of *n* senior scientists must decide whether to fund a research proposal; funding needs at least `pass_threshold` fundable scores. The panel falls short, the grant is not awarded, and the evaluator judges how blameworthy the focal reviewer (**Dr. Reyes**) is. Structurally isomorphic to the Friedenberg-Halpern committee example and to s01.
+% A board of *n* directors must authorize a major financial commitment; authorization needs at least `pass_threshold` votes in favor. The board falls short, the commitment is not authorized, and the evaluator judges how blameworthy the focal director (**Director Castellan**) is. Structurally isomorphic to the Friedenberg-Halpern committee example and to s01.
+
+\begin{table}[h]
+  \centering
+  \caption{Scenarios (structurally isomorphic to the FH committee example) used for LLM evaluation, including their respective skins or framings.}
+  \begin{tabular}{|c|c|p{8cm}|}
+    \hline
+    Scenario ID & Skin/Framing & Description \\
+    \hline
+    s01 & Health Scenario & Hospital board of $n$ physicians authorizing treatment. Needs $\geq \texttt{pass\_threshold}$ sign-offs. Treatment withheld; evaluator judges focal physician (Dr.~Aris) blameworthiness. \\[10pt]
+    s02 & Grant Scenario & Review panel of $n$ senior scientists deciding on funding a research proposal. Needs $\geq \texttt{pass\_threshold}$ fundable scores. Grant not awarded; evaluator judges focal reviewer (Dr.~Reyes) blameworthiness. \\[10pt]
+    s03 & Board Scenario & Board of $n$ directors authorizing a major financial commitment. Needs $\geq \texttt{pass\_threshold}$ votes in favor. Commitment not authorized; evaluator judges focal director (Director Castellan) blameworthiness. \\[10pt]
+    \hline
+  \end{tabular}
+  \label{tab:scenarios}
+\end{table}
+
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.8\textwidth]{img/03_exp_parameter_mapping_1.png}
+  \caption{Example of the mapping of ordinal labels to natural language descriptions for the parameter $p_0$ (initial belief), for the health scenario.}~\label{fig:parameter_mapping}
+\end{figure}
+
+The evaluation is structured into two main components: a headline sweep and validation arms. The headline sweep manipulates the belief parameter ($p_0$) across all models and scenarios to test whether the LLM blame curve reproduces the shape predicted by the FH framework (see \ref{sec:results}). The validation arms, on the other hand, involve one-factor-at-a-time (OFAT) manipulations that change a single held variable (own vote, pressure effectiveness $\alpha$, and switch cost/stakes) to check if the LLM curve shifts in the same direction as the FH baseline curve.
+
+Only three models were evaluated due to resource constraints. The models were selected based on two criteria: affordability and representativeness. The affordability criterion enables the evaluation to be conducted within the available budget, while additionally enabling a variety of experimental conditions to be tested. The representativeness criterion ensures that the selected models capture a range of capabilities and architectures. The three models chosen for evaluation are: \texttt{gemini-2.5-flash}, \texttt{llama-3.3-70b-instruct}, and \texttt{qwen3-235b-a22b-2507} (see the models' parameters in Table~\ref{tab:models}). Each model was evaluated across the three scenarios (s01, s02, s03) and multiple prompt phrasings to assess the robustness of their blameworthiness judgments. It is important to note that the validation arms were run for one model (qwen) and one scenario (s01) only, so they are indicative rather than confirmatory. This limitation is discussed further in Section~\ref{sec:limitations}. All models were set a temperature of 1.0 to encourage diverse responses, and the evaluation was repeated across multiple runs to account for stochasticity in the models' outputs (the limitations of this approach are discussed in Section~\ref{sec:limitations}).
+
+\begin{table}[h]
+  \centering
+  \caption{Models evaluated for blameworthiness apportionment, including their respective parameters.}
+  \begin{tabular}{|c|c|p{6cm}|}
+    \hline
+    Model & Parameters & Notes \\
+    \hline
+    gemini-2.5-flash & 2.5B &  Includes built-in "thinking" capabilities, enabling it to provide responses with greater accuracy and nuanced context handling. \\[5pt]
+    qwen3-235b-a22b-2507 & 22B & Optimized for general-purpose text generation, including instruction following, logical reasoning, math, code, and tool usage. \\[5pt]
+    llama-3.3-70b-instruct & 70B & General-purpose large language model with strong reasoning capabilities. \\[5pt]
+    \hline
+  \end{tabular}
+  \label{tab:models}
+\end{table}
+
+\subsubsection{Experimental Setup}
+
+The experiment design was split in two parts: first, a headline sweep that manipulates the belief parameter ($p_0$) across all models and scenarios, and second, validation arms that involve one-factor-at-a-time (OFAT) manipulations that change a single held variable (own vote, pressure effectiveness $\alpha$, and switch cost/stakes). The goal of the headline sweep is to test whether the LLM blame curve reproduces the shape predicted by the FH framework, while the validation arms check if the LLM curve shifts in the same direction as the FH baseline curve.
+
+\paragraph{Headline Sweep} In total, the evaluation involved 3 models, 3 scenarios, 7 $p_0$ levels, 3 prompt phrasings, and 10 repetitions per condition, resulting in a total of 1,890 unique evaluations. Each evaluation consisted of presenting the model with a scenario description, including the relevant parameters expressed in natural language. The model was additionally asked to assign blameworthiness scores to each agent, an inferred value for the parameter $p_0$, and its inferred value for the increase in probability due to social pressure $\alpha$. The model's responses were then collected and analyzed to assess their alignment with the FH framework's predictions.
+
+\paragraph{Validation Arms} The validation arms were run for one model (qwen) and one scenario (s01) only, resulting in a total of 210 unique evaluations. Each evaluation involved manipulating a single held variable (own vote, pressure effectiveness $\alpha$, and switch cost/stakes) while keeping all other parameters constant. The model was asked to assign blameworthiness scores to each agent, as well as its inferred values for the manipulated parameter. The model's responses were then collected and analyzed to assess whether the LLM curve shifted in the same direction as the FH predicted curve.
+
+For the headline sweep, we assess whether the ranking of LLM blame scores across $p_0$ levels matches the FH prediction's ranking, and whether the blame curve shows the non-monotone peak predicted by the framework. For the validation arms, we test whether manipulating each held variable shifts the blame curve in the direction the FH baseline predicts. Where multiple comparisons are made, results are adjusted to control the false discovery rate.
+
+The results of the headline sweep and validation arms are presented in Section~\ref{sec:results}, where we discuss the observed patterns and their implications for understanding how well LLM-based judges reproduce the structure of FH blameworthiness.
+
+\section{Results}\label{sec:results}
 
 \subsection{Parameter Sensitivity Analysis of FH Blameworthiness (RQ1)}
 
-% - Present the results of the ablation study, showing how blameworthiness varies with each parameter.
+% - Present the results of the sweep, showing how blameworthiness varies with each parameter.
 % - Use tables and figures to illustrate the relationships between parameters and blameworthiness.
 % - Discuss any patterns observed, such as monotonicity, thresholds, or non-linear effects
 % - Highlight any surprising findings or deviations from expected behavior, and provide possible explanations based on the theoretical framework.
 % - Conclude with a summary of how the FH framework's predictions hold up under systematic parameter variation, and how this informs the interpretation of RQ1 and RQ2.
+
+% The parameter sensitivity analysis reveals a set of structural properties of the FH FH baseline that are not immediately obvious from the framework's definition. The most salient is the \textbf{non-monotonicity of blame in belief} ($p_0$): individual blameworthiness peaks at moderate epistemic optimism ($p_0 \approx 0.35$, blame $\approx 0.128$) and declines sharply toward both extremes. When the agent is nearly certain others will vote yes, their marginal coalitional contribution is negligible; when nearly certain they will vote no, collective action is too costly to make a difference. Blame is highest precisely where individual pivotality and collective feasibility are jointly non-trivial.
+
+% The remaining parameters modulate this curve in ways that are not always intuitive. \textbf{Own vote} shifts the curve downward but does not eliminate blame for the agent who voted correctly: the FH baseline assigns the yes-voter approximately 30\% of the no-voter's blame ($db_\text{yes} = 0.022$ vs. $db_\text{no} = 0.073$ at $p_0 = 0.6$), reflecting the lobbying action they could still have taken. \textbf{Switch cost} reduces blame monotonically, with the slope steeper at low stakes and flatter at high stakes, since the balance parameter $N$ discounts cost relative to the outcome. \textbf{Pressure effectiveness} ($\alpha$) shifts the location of the $p_0$ blame peak: lower $\alpha$ moves the peak rightward (blame peaks later, when belief is higher and lobbying finally becomes worth it), while higher $\alpha$ moves it leftward. At a fixed $p_0$, higher $\alpha$ actually decreases individual blame, as responsibility spreads across the coalition's Shapley contributions rather than concentrating on the focal agent. \textbf{Voting threshold} increases blame almost monotonically up to near-unanimity (6/7), where it peaks, then falls slightly at unanimity, as requiring all seven votes makes the alternative coalition too costly. Finally, under \textbf{group size} variation, individual blame dilutes as the group grows (0.244 for $n=3$ down to 0.044 for $n=9$), reflecting the ``many hands'' effect; group blame does not remain constant across group sizes.
+
+% These patterns establish the FH baseline's ground truth for RQ2. The non-monotone $p_0$ curve and the partial blame of the yes-voter are the most counterintuitive predictions, and therefore the most diagnostic for assessing whether LLM judges reproduce the structure of the framework or default to simpler, monotone heuristics.
+
+The parameter sensitivity analysis confirms expected structural properties of the FH framework, while revealing quantitative nuances (see Figure~\ref{fig:rq1_sensitivity} for an overview of the analysis results): 
+
+First, the analysis shows that blame is non-monotonic in initial belief ($p_0$): it peaks at moderate optimism ($p_0 \approx 0.35$, blame $\approx 0.128$) and declines toward both extremes. This pattern follows directly from the framework's logic: blame depends on both pivotality and feasibility. When others are certain to vote \texttt{no}, intervention becomes too costly to achieve; when certain to vote \texttt{yes}, intervention is unnecessary. The peak occurs at intermediate beliefs where the individual agent can plausibly make a difference.
+
+Second, the other parameters affect this base curve in predictable ways. For instance, an agent's \textit{actual vote} reduces the blame curve but does not eliminate it. The framework assigns the \texttt{yes}-voter roughly 30\% of the \texttt{no}-voter's blame (e.g., $db_\text{yes} = 0.022$ versus $db_\text{no} = 0.073$ at $p_0 = 0.6$). This reflects shared responsibility: even if an agent voted correctly, they could have still tried to pressure others to change their votes. \textit{Switch cost} decreases blame in a monotonic way, but the effect is smaller at high stakes ($N$); when outcomes matter more, the cost of switching matters less. 
+
+Furthermore, \textit{pressure effectiveness} ($\alpha$) dynamically shifts the location of the $p_0$ peak. Lower effectiveness delays the peak rightward, meaning blame only materializes when baseline beliefs are already high enough to make weak lobbying viable. Counterintuitively, at a fixed belief state, higher pressure effectiveness actually \textit{decreases} the individual blame of the focal agent. Because the Shapley value calculates marginal contributions to coalitions, highly effective social pressure means that \textit{any} subset of agents could have fixed the outcome, thereby spreading the total responsibility more evenly across the group rather than concentrating it on the target agent. 
+
+Finally, macroscopic variables like the \textit{voting threshold} and \textit{group size} behave in structurally sound ways. Blame steadily increases alongside the voting threshold, peaking at near-unanimity (6 out of 7 votes required), before dropping slightly at strict unanimity (7 out of 7), where the cost of coordinating a flawless consensus becomes too exorbitant to reasonably expect. Similarly, systematically increasing the group size (from $n=3$ to $n=9$) strictly dilutes individual blame (dropping from $0.244$ to $0.044$), successfully formalizing the philosophical ``problem of many hands.''
+
+Ultimately, these patterns establish a rigorous, mathematically grounded baseline. The non-monotone belief curve and the partial blameworthiness of the ``correct'' voter represent predictions from the framework that may not be immediately intuitive, but that are philosophically sound. Because these findings oppose simple heuristics,  as assigning 100\% of the blame to the \texttt{no}-voter and 0\% to the \texttt{yes}-voter, they serve as an appropriate diagnostic benchmark for RQ2. They allow us to precisely evaluate whether Large Language Model judges can genuinely replicate the structural nuances of formal moral apportionment, or if they rely on shallower, monotonic heuristics that fail to capture the subtleties of shared responsibility in multi-agent settings.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{img/04_rq1_sensitivity.png}
+  \caption{Parameter sensitivity of the FH framework baseline. (a) Blame vs.\ belief ($p_0$) for both vote outcomes: blame is non-monotone and peaks at $p_0 \approx 0.35$; the yes-voter retains
+nonzero blame throughout. (b) Varying pressure effectiveness ($\alpha$) shifts the peak leftward as lobbying becomes more viable at lower beliefs. (c) Switch cost reduces blame
+monotonically; the slope flattens at high stakes ($N$). (d) Blame increases almost monotonically with voting threshold, peaking at $\geq 6/7$ before falling at unanimity. (e) Individual
+blame dilutes as group size grows (many hands effect). (f) At fixed $p_0=0.6$, individual blame decreases with $\alpha$ as responsibility spreads across the coalition.}
+  \label{fig:rq1_sensitivity}
+\end{figure}
 
 \subsection{LLM-based Judges (RQ2)}
 
@@ -530,16 +623,16 @@ This verification step consisted in running the script with the parameters repor
 % "Right pattern, wrong magnitude"
 % - This is the headline finding and deserves its own subsection so it is not diluted into general interpretation.
 % - State the qualitative result: the models reproduce the *signature* of counterfactual (Shapley) blame -- non-monotonic in belief, peaking at moderate belief and declining toward certainty, sensitive to vote and to lobbying effectiveness -- and this is not an artifact of misreading inputs (inferred p0 rises monotonically with the swept level).
-% - State the quantitative gap: the oracle's peak-to-trough range is compressed by the models (roughly 60x -> ~1.3-1.8x); a correct (yes) vote is never fully exonerated to zero; and blame is insensitive to switch cost.
+% - State the quantitative gap: the FH baseline's peak-to-trough range is compressed by the models (roughly 60x -> ~1.3-1.8x); a correct (yes) vote is never fully exonerated to zero; and blame is insensitive to switch cost.
 % - Note that feeding each model its own inferred values (oracle_at_inferred) gives weaker agreement than the nominal mapping, so blame is not a clean function of the quantities the model reports reasoning from.
-% - Note the framing effect: the cold corporate-board skin (s03) tracks the oracle most weakly, the affect-laden health skin (s01) most strongly.
+% - Note the framing effect: the cold corporate-board skin (s03) tracks the FH baseline most weakly, the affect-laden health skin (s01) most strongly.
 % - Draw the implication for the LLM-as-judge use case: models capture the direction of structured blame but are not calibrated enough to be trusted with its magnitude.
 
-\section{Limitations}
+\section{Limitations}\label{sec:limitations}
 
 % Scope this section to what is *wrong or unverified* about the study (leave "what to do next" to Future Work to avoid repetition).
 % - Coverage: the RQ2 validation arms (vote, alpha, cost/stakes) were run for a single model (qwen) and a single scenario (s01) only, so every direction-of-shift result rests on one cell and is indicative, not confirmatory. Only the headline p0 sweep has full model x scenario coverage.
-% - The framework itself encodes modelling choices (the ordinal-label -> number mapping, the balance parameter N, the social-pressure model) that condition every oracle comparison.
+% - The framework itself encodes modelling choices (the ordinal-label -> number mapping, the balance parameter N, the social-pressure model) that condition every FH baseline comparison.
 % - LLM-specific threats: sensitivity to prompt phrasing, limited model set, and the elicited 0-100 blame scale may compress or distort magnitudes.
 % - The natural-language-only design means the LLM's reading of a parameter may diverge from the nominal mapping; we measure this (inferred values) but cannot fully control it.
 
