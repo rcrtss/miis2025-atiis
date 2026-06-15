@@ -1,0 +1,68 @@
+{
+  "run_id": "sweep1_p0/s02_grant/gemini-2.5-flash/baseline",
+  "sweep": "sweep1_p0",
+  "sweep_var": "p0",
+  "scenario": "s02_grant",
+  "model": "google/gemini-2.5-flash",
+  "temperature": 1.0,
+  "reps": 10,
+  "seed": 0,
+  "levels": [
+    "very_low",
+    "low",
+    "somewhat_low",
+    "even",
+    "somewhat_high",
+    "high",
+    "very_high"
+  ],
+  "arm": "baseline",
+  "arm_overrides": {},
+  "held": {
+    "c_sw": "significant",
+    "alpha": "modest",
+    "vote": "no",
+    "stakes": "default",
+    "num_agents": 7,
+    "pass_threshold": 4
+  },
+  "fix_nuisance_wording": true,
+  "oracle": {
+    "n_balance": 5000,
+    "c_pressure": 100,
+    "stakes_n_reference": {
+      "low": 2500,
+      "default": 5000,
+      "high": 12000
+    },
+    "p0_reference": {
+      "very_low": 0.1,
+      "low": 0.2,
+      "somewhat_low": 0.35,
+      "even": 0.5,
+      "somewhat_high": 0.6,
+      "high": 0.8,
+      "very_high": 0.9
+    },
+    "csw_reference": {
+      "trivial": 200,
+      "minor": 500,
+      "significant": 2000,
+      "severe": 3000
+    },
+    "alpha_reference": {
+      "negligible": 0.01,
+      "slim": 0.03,
+      "modest": 0.05,
+      "strong": 0.1
+    }
+  },
+  "code_version": "949aadd",
+  "started_utc": "20260605T124218Z",
+  "status": "complete",
+  "updated_utc": "20260605T144354Z",
+  "n_planned": 210,
+  "n_calls": 210,
+  "n_done": 210,
+  "n_errors": 0
+}
