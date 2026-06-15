@@ -595,20 +595,47 @@ Ultimately, these patterns establish a rigorous, mathematically grounded baselin
 \begin{figure}[h]
   \centering
   \includegraphics[width=\textwidth]{img/04_rq1_sensitivity.png}
-  \caption{Parameter sensitivity of the FH framework baseline. (a) Blame vs.\ belief ($p_0$) for both vote outcomes: blame is non-monotone and peaks at $p_0 \approx 0.35$; the yes-voter retains
-nonzero blame throughout. (b) Varying pressure effectiveness ($\alpha$) shifts the peak leftward as lobbying becomes more viable at lower beliefs. (c) Switch cost reduces blame
-monotonically; the slope flattens at high stakes ($N$). (d) Blame increases almost monotonically with voting threshold, peaking at $\geq 6/7$ before falling at unanimity. (e) Individual
-blame dilutes as group size grows (many hands effect). (f) At fixed $p_0=0.6$, individual blame decreases with $\alpha$ as responsibility spreads across the coalition.}
+  \caption{Parameter sensitivity of the FH framework baseline. (a) Blame vs.\ belief ($p_0$) for both vote outcomes: blame is non-monotone and peaks at $p_0 \approx 0.35$; the yes-voter retains nonzero blame. (b) Varying pressure effectiveness ($\alpha$) shifts the peak to the left as lobbying becomes more viable at lower beliefs. (c) Switch cost reduces blame monotonically, and the slope flattens at high stakes ($N$). (d) Blame increases almost monotonically with voting threshold, peaking at $\geq 6/7$ before falling at unanimity. (e) Individual blame dilutes as group size grows (many hands effect). (f) At fixed $p_0=0.6$, individual blame decreases with $\alpha$ as responsibility spreads across the coalition.}
   \label{fig:rq1_sensitivity}
 \end{figure}
 
 \subsection{LLM-based Judges (RQ2)}
 
-% - Present the results of the LLM-based judges' blameworthiness assignments, comparing them to the FH framework's predictions.
-% - Use tables and figures to illustrate the alignment or divergence between LLM judgments and the FH framework.
-% - Discuss any patterns observed, such as consistency across different models, sensitivity to prompt phrasing, or alignment with human intuition.
-% - Highlight any surprising findings or deviations from expected behavior, and provide possible explanations based on the models' training data, architecture, or limitations.
-% - Conclude with a summary of how well LLM-based judges reproduce the structure of FH blameworthiness, and how this informs the interpretation of RQ2.
+Before discussing the headline sweep and validation arms, it is important to comment about the input and output of the LLMs. As described in Section~\ref{sec:llm_judges}, the LLMs were provided with natural language descriptions of the parameters, and they were asked to assign blameworthiness scores to each agent on a scale from 0 to 100. The models were also asked to provide their inferred values for the parameters, which allows us to assess how well they understood the scenario and whether their blameworthiness judgments were consistent with their own inferred beliefs. The aggregated results accross models and scenarios showed that the mean inferred values for $p_0$ rise monotonically (from $\approx 0.13$ to $\approx 0.90$) as the swept level increases.
+
+The results for the headline sweep of $p_0$ (RQ2) are presented in Figure~\ref{fig:rq2_llm_judges}. This figure shows the main finding of the study: accross all nine model-scenario combinations, the LLMs show a non-monotone pattern of blameworthiness that qualitatively matches the FH framework's predictions. Despite the fact that the models recieved natural language ordinal descriptions for $p_0$ rather than numeric values, they were able to capture the overall shape of the blame curve, peaking at moderate beliefs and declining toward both extremes. Some of the model-scenario combinations show clearly a single-peak pattern, while others show a more plateau-like behavior, but the overall trend is consistent with the FH framework's predictions in the sense that blame is highest at intermediate beliefs and lower at extreme beliefs. 
+
+Furthermore, we calculated the Spearman rank correlation coefficient ($\rho$) between the LLM blame scores and the FH baseline for each model-scenario combination. The results show that eight out of nine cells statistically resemble the results from the FH baseline, except for the \texttt{gemini-2.5-flash} model in the board scenario ($\rho=0.10$). \texttt{Qwen3-235b-a22b-2507} shows the strongest agreement with the FH baseline for the health scenario ($\rho=0.53$), while \texttt{llama-3.3-70b-instruct} shows the weakest agreement for the grant scenario ($\rho=0.30$).
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{img/04_rq2_headline.png}
+  \caption{Headline sweep of $p_0$ for LLM-based judges. The figure shows the non-monotone pattern of blameworthiness across all nine model-scenario combinations, qualitatively matching the FH framework's predictions.}
+  \label{fig:rq2_llm_judges}
+\end{figure}
+
+While the results show qualitative agreement in the direction of the FH blameworthiness computations, the quantitative difference between the LLMs and the FH baseline is substantial. Firstly, the LLM blame curves are compressed in magnitude compared to the FH baseline. The peak-to-trough range of the FH baseline is roughly $65.7\times$ (accross the seven levels of $p_0$), while the LLMs show a range of approximately $1.2-1.7\times$ (depending on the model-scenario pair). In other words, the LLMs significantly underestimate the variation in blameworthiness compared to the framework. 
+
+Secondly, when comparing the blame scores against the FH value computed at its own inferred $p_0$ (oracle\_at\_inferred), the LLMs show weak agreement with the baseline. This suggests that the LLMs' judgements are not fully explained by the parameter values they report reasoning from, indicating that their blameworthiness assessments may be influenced by other factors or heuristics that are not captured by the FH framework's parameters.
+
+The health scenario (s01) shows the strongest alignment between the LLMs and the FH baseline accross all models. On the other hand, the corporate board scenario (s03) shows the weakest alignment. Although the design of this experiment does not allow us to draw strong conclusions or causal claims about the effect of scenario framing on the LLMs' blameworthiness judgments, we do observe a big difference accross the scenarios, while preserving the non-monotone pattern of blameworthiness. This suggests that the framing of the scenario may influence the LLMs' judgments, and that further research is needed to explore this effect in more detail.
+
+\subsection{Validation Arms}
+
+For the validation runs, we manipulated three parameters: own vote, pressure effectiveness ($\alpha$), and switch cost/stakes. The results are presented in Figure~\ref{fig:rq2_validation_arms}. For simplicity and due to resource constraints, these validation arms were run for one model (\texttt{qwen3-235b-a22b-2507}) and one scenario (s01) only, so every direction-of-shift result rests on one cell and is indicative rather than confirmatory. 
+
+For this scenario, when Dr. Aris votes \texttt{yes}, the LLM blame effectively shifts downward, as predicted by the FH baseline. Once more, the qualitative shift is preserved, but the magnitude of the shift is compressed compared to the FH baseline. Namely, for the FH baseline, the ratio of blame for an agent that votes yes, compared to the same agent voting no, is roughly $\approx 3.3\times$. For the LLM, the same ratio is $\approx 1.37\times$. Nevertheless, agents who vote yes are never assigned a score of zero, indicating that the LLM recognizes that they still have some responsibility for the outcome, just as the FH framework predicts. Revisiting the intuition on this point, LLMs seem to agree that even a correct vote does not absolve an agent of responsibility, as they could have still attempted to influence others to change their votes.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\textwidth]{img/04_rq2_validation.png}
+  \caption{Validation arms for LLM-based judges. The figure shows the effect of manipulating own vote, pressure effectiveness ($\alpha$), and switch cost/stakes on the blameworthiness scores assigned by the LLM. The results are indicative rather than confirmatory, as they were run for one model and one scenario only.}
+  \label{fig:rq2_validation_arms}
+\end{figure}
+
+Similarly, when we manipuate the pressure effectiveness ($\alpha$), we observe that the LLM blame curve shifts in the same direction as the FH baseline. When $\alpha$ is increased, the blameworthiness peaks shift to the left. However, if we look back to Figure~\ref{fig:rq1_sensitivity}f, we can see that the FH baseline predicts that at a fixed $p_0$, blameworthiness should decrease as $\alpha$ increases. The LLMs do not capture this effect, as they show a slight increase in blameworthiness at a fixed $p_0$ when $\alpha$ is increased. This suggests that while the LLMs are able to capture the overall direction of the blame curve shift, they do not fully capture the nuanced effects of pressure effectiveness on individual blameworthiness.
+
+Finally, when we manipulate the switch cost/stakes, we observe that blame curves from the LLM outputs are quite similar between each other, and no detectable shifts in blame can be observed. This is in contrast to the FH baseline, which predicts that blameworthiness should decrease as switch cost increases. Despite these results, it is important to note that the representation of the balance parameter $N$ in natural language may not have been interpreted by the LLMs as the experimental design intended. We note that this is a limitation of the study, and that further research is needed to explore how LLMs interpret and reason about natural language representations of parameters in blameworthiness frameworks. For the sake of this study, we limit ourselves to conclude that the non-monotone pattern of blameworthiness is preserved across the different tested values for cost/stakes, even if other effects from the FH baseline were not possible to detect.
 
 \section{Discussion}
 
@@ -617,6 +644,17 @@ blame dilutes as group size grows (many hands effect). (f) At fixed $p_0=0.6$, i
 % - Provide a detailed interpretation of the results from both RQ1 and RQ2, synthesizing the findings from the parameter sensitivity analysis and the LLM-based judges.
 % - Discuss the implications of the results for understanding blameworthiness in multi-agent settings, and how they inform the broader questions of responsibility and accountability in AI systems.
 % - Highlight any theoretical contributions, practical implications, or insights gained from the study, and how they relate to existing literature on blameworthiness and responsibility.
+
+The sensitivity analysis of the FH baseline (RQ1) revealed that, under this framework, and for scenarios with the structure of the committee example, blameworthiness is non-monotonic in initial belief ($p_0$), peaking at moderate optimism and declining toward both extremes. Other parameters modulate this curve in ways that are not always intuitive, such as the effect of pressure effectiveness ($\alpha$) on the location of the peak, and the dilution of individual blame as group size increases. These findings establish a rigorous baseline for evaluating LLM-based judges (RQ2).
+
+While using such a framework as baseline provides a principled way to evaluate LLMs, it is important to note the big challenges that come with this approach, particularly for framing the problem with natural language. 
+
+The results answer RQ2 in a non-trivial way. The LLMs were able to capture the qualitative characteristics predicted by the FH framework, but notably the results differed quantitatively. This suggests that while LLMs can reproduce the results that align with intuitions on how humans apportion blame, there was no evidence about correct calibration, one that would be required for trusting LLMs with the magnitude of blameworthiness judgements.
+
+In a sense, the two approaches partially validate each other: the FH framework provides a rigorous, mathematically grounded baseline that captures non-trivial patterns of blameworthiness, while the LLMs show qualitative agreement with this baseline, indicating that they can capture some structural nuances of moral apportionment (behaviors that likely emerge from the training data). However, the quantitative discrepancies suggest that LLMs may not be fully capturing the underlying principles of the FH framework, or that they may be influenced by other factors or heuristics that are not accounted for in the framework. This highlights the need for further research to explore how LLMs reason about blameworthiness and how their judgments can be calibrated and tested (e.g., through systematic evaluation against diverse scenarios and parameter settings, or even using other frameworks as baselines).
+
+Despite this resemblance, the convergance between the LLMs and the FH baseline seems to be shallow. The LLMs' sensitivity to switch cost and pressure effectiveness did not match the FH baseline substantially. This can mean, we argue, two possible things: either the manipulation of these parameters in the design presents limitations that must be revised in future work, or the LLMs are not sensitive to cost and pressure in the same way that the FH framework suggests.
+
 
 \subsection{How Closely LLM Blame Matches the Framework}
 
@@ -627,21 +665,48 @@ blame dilutes as group size grows (many hands effect). (f) At fixed $p_0=0.6$, i
 % - Note that feeding each model its own inferred values (oracle_at_inferred) gives weaker agreement than the nominal mapping, so blame is not a clean function of the quantities the model reports reasoning from.
 % - Note the framing effect: the cold corporate-board skin (s03) tracks the FH baseline most weakly, the affect-laden health skin (s01) most strongly.
 % - Draw the implication for the LLM-as-judge use case: models capture the direction of structured blame but are not calibrated enough to be trusted with its magnitude.
+The headline finding of this study is that LLM-base judges output the right pattern but the wrong magnitude when it comes to blameworthiness judgments in the context of the FH framework. Every model-scenario combination reproduces the signature of counterfactual Shapley blame, without being told to do so. Nevertheless, the models behave as if $p_0$ levels are in general similar in blame, while the framework assigns significantly more blame at moderate beliefs than at extreme beliefs.
 
-\section{Limitations}\label{sec:limitations}
+The models also get several qualitative features right: a correct (yes) vote reduces but does not eliminate blame, and the blame curve shifts in the direction predicted by the FH baseline when pressure effectiveness is manipulated. However, the models fail to capture other effects, such as the decrease in blame with switch cost. Moreover, when we feed each model its own inferred values for $p_0$ and $\alpha$, we find that agreement with the FH baseline is in general week, suggesting that the models' blameworthiness judgments are not fully explained by the parameter values they report reasoning from. This indicates that the models may be influenced by other factors or heuristics that are not captured by the FH framework's parameters.
 
-% Scope this section to what is *wrong or unverified* about the study (leave "what to do next" to Future Work to avoid repetition).
-% - Coverage: the RQ2 validation arms (vote, alpha, cost/stakes) were run for a single model (qwen) and a single scenario (s01) only, so every direction-of-shift result rests on one cell and is indicative, not confirmatory. Only the headline p0 sweep has full model x scenario coverage.
-% - The framework itself encodes modelling choices (the ordinal-label -> number mapping, the balance parameter N, the social-pressure model) that condition every FH baseline comparison.
-% - LLM-specific threats: sensitivity to prompt phrasing, limited model set, and the elicited 0-100 blame scale may compress or distort magnitudes.
-% - The natural-language-only design means the LLM's reading of a parameter may diverge from the nominal mapping; we measure this (inferred values) but cannot fully control it.
+Finally, we observe that models are in general reliable for ordinal claims: which configurations attract more blame, whether the blame curve is non-monotone, whether changing a key parameter shifts blame in the expected direction. However, they are not reliable for cardinal claims: how much more blame a given configuration attracts, how much the curve shifts, or what the model's own inferred parameters are. 
 
-\section{Conclusions and Future Work}
+Any application that requires precise quantitative apportionment, such as automated accauntability in AI governance, should not trust the magnitude of LLM blame scores without some external calibration.
 
-% Conclusions = what we found; Future Work = what to do next. Keep these distinct from Limitations above.
-% - Summarize the key findings: the FH framework's behaviour across its parameter space (RQ1), and the qualitative-but-miscalibrated tracking by LLM judges (RQ2).
-% - Discuss the implications for AI governance, accountability, and the LLM-as-judge use case (direction trustworthy, magnitude not).
-% - Future work: extend the validation arms to full model x scenario coverage; test more models; explore calibration / fine-tuning to close the quantitative gap; investigate alternative blameworthiness frameworks and richer multi-agent scenarios.
+
+\section{Limitations and Future Work}\label{sec:limitations}
+
+The most significant limitations of this study include the following:
+
+\begin{itemize}
+  \item \textbf{Validation Arms for Single Model:} The validation arms were only run for one model (qwen) and one scenario (s01), which limits the generalizability of the findings. Future work should expand the validation arms to include multiple models and scenarios to confirm whether the observed patterns hold across different conditions. 
+  
+  \item \textbf{Parameter Manipulation:} The manipulation of parameters such as switch cost and pressure effectiveness may not have been interpreted by the LLMs as intended, which could affect the validity of the results. Future work should explore alternative ways to represent these parameters in natural language to ensure that they are understood correctly by the models.
+  
+  \item \textbf{FH Framework as Baseline:} While the FH framework provides a rigorous baseline for evaluating LLM-based judges, it is just one of many possible frameworks for moral apportionment. The findings may not generalize to other frameworks or scenarios that do not share the same structure as the committee example, and they certainly don't yield any claim about the moral correctness of the models' judgments. Future research could explore how LLMs perform when evaluated against different moral frameworks or in more complex, real-world scenarios.
+  
+  \item \textbf{FH Framework's Assumptions:} The FH framework relies on specific assumptions about how blameworthiness is calculated based on counterfactual contributions and the structure of the decision-making process. If these assumptions do not hold in real-world scenarios, the applicability of the findings may be limited. Future work could investigate how robust the results are to variations in the underlying assumptions of the FH framework.
+  
+  \item \textbf{FH Framework's Applicability to Real-World Scenarios:} The scenarios used in this study are stylized and may not capture the full complexity of real-world situations where blameworthiness judgments are made. Additionally, the simplification done by FH for the committee scenario to be computable may not reflect the nuances of real-world decision-making. Future research could explore how well the FH framework and LLM-based judges perform in more realistic settings, such as actual legal cases or ethical dilemmas faced by organizations.
+  
+  \item \textbf{Selection of LLMs:} The study only evaluated three LLMs due to resource constraints, which may not be representative of the broader range of models available. Future work should include a larger and more diverse set of models to assess whether the observed patterns hold across different architectures and training regimes.
+
+  \item \textbf{Blame Score Range:} The LLMs were asked to assign blameworthiness scores on a scale from 0 to 100 due to the requirements of the experiment, which may not capture the full range of moral judgments that humans might make. Future research could explore alternative ways to elicit blameworthiness judgments from LLMs, such as using qualitative descriptions or more nuanced rating scales.
+
+  \item \textbf{Balance Parameter $N$:} The balance parameter $N$ was reverse engineered but is not confirmed to be the one used by FH. Additionally, the natural language representation of this parameter is particularly complex due to the ambiguity of the concept itself, which may have led to misinterpretation by the LLMs. Future work could explore alternative ways to represent this parameter, or even consider using a different parameter that captures the same underlying concept but is more easily understood by the models.
+
+  \item \textbf{Natural Language Representation of Parameters:} The parameters of the FH framework were represented in natural language for the LLMs, which may have led to misinterpretation or oversimplification. Future work could explore alternative ways to represent these parameters, such as using more structured prompts or providing additional context to ensure that the models understand the parameters as intended.
+
+  \item \textbf{Scenario Framing Effects:} The study observed differences in LLM blameworthiness judgments across different scenarios, suggesting that the framing of the scenario may influence the models' judgments. Future research could systematically investigate how different framings affect LLM blameworthiness judgments and whether certain framings lead to more accurate or reliable assessments.
+\end{itemize}
+
+In general, future work should extend the validation arms to cover all models and scenarios, to confirm or refute the findings from the headline sweep. Testing more models accross more scenarios would provide a more comprehensive understanding of how LLMs reason about blameworthiness and how their judgments align with formal frameworks like FH. Additionally, exploring alternative ways to represent parameters and scenarios in natural language could help improve the accuracy and reliability of LLM-based judges. Finally, future research could investigate how LLMs perform when evaluated against different moral frameworks or in more complex, real-world scenarios, to assess the generalizability of the findings and their applicability to practical decision-making contexts.
+
+\section{Conclusions}
+
+This study provides a systematic evaluation of LLM-based judges in the context of blameworthiness apportionment, using the FH framework as a rigorous baseline. The findings reveal that while LLMs can capture the qualitative patterns predicted by the framework, they fall short in terms of quantitative accuracy and sensitivity to certain parameters. These results highlight both the potential and limitations of using LLMs for moral reasoning tasks, and underscore the need for further research to improve their calibration and reliability.
+
+The practical implications of this work are in the context of AI governance and accountability, where LLMs may be used to assist in decision-making processes that involve moral judgments. The study suggests that while LLMs can provide valuable insights into blameworthiness, their outputs should be interpreted with caution, particularly when precise quantitative assessments are required.
 
 \newpage
 
