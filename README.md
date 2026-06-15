@@ -32,6 +32,10 @@ Friedenberg, M., & Halpern, J. Y. (2019). Blameworthiness in Multi-Agent Setting
 
 This project was conducted as part of the MIIS 2025 course on *"Advanced Topics in Intelligent Interactive Systems"* at Universitat Pompeu Fabra. I thank my instructor and peers for their feedback and support throughout this research.
 
+## Use of AI
+ 
+This project uses AI tools (LLMs) for research purposes. The code and manuscript were generated with the assistance of LLMs, particularly for drafting, code generation, and data analysis. The final manuscript and code were written and verified by the author, who takes full responsibility for the content. The use of AI tools was limited to support tasks and did not replace critical thinking, original research, or decision-making.
+
 ## License
 
 This repository and all its content (including the manuscript) is licensed under GLP-3.0 License. See [LICENSE](./LICENSE) for details.
