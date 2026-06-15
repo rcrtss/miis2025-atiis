@@ -27,3 +27,12 @@ For details, see the report in `report/main.tex`.
 ## Key Reference
 
 Friedenberg, M., & Halpern, J. Y. (2019). Blameworthiness in Multi-Agent Settings. *Proceedings of the AAAI Conference on Artificial Intelligence*, 33(01), 525–532.
+
+## Acknowledgements
+
+This project was conducted as part of the MIIS 2025 course on *"Advanced Topics in Intelligent Interactive Systems"* at Universitat Pompeu Fabra. I thank my instructor and peers for their feedback and support throughout this research.
+
+## License
+
+This repository and all its content (including the manuscript) is licensed under GLP-3.0 License. See [LICENSE](./LICENSE) for details.
+Any use of the code or manuscript must include proper attribution to the original author and source.
