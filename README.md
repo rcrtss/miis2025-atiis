@@ -12,6 +12,18 @@ This project implements and empirically tests the group blameworthiness framewor
 
 ![Sweep p0 in the reimplementation of Friedenberg & Halpern (2019)](./docs/img/sweep_p0_oracle.png)
 
+## Repository layout
+
+- `framework/`: Python implementation of the FH committee model (`committee.py`)
+- `experiment/`: LLM sweep runner, prompts, and analysis notebooks
+- `report/`: LaTeX source for the accompanying paper
+
+## Key finding
+
+LLMs reproduce the qualitative structure of FH blameworthiness, non-monotone blame curve peaking at moderate belief, non-zero blame for the correct voter, but are quantitatively miscalibrateds. Models evaluated: `qwen3-235b-a22b-2507`, `llama-3.3-70b-instruct`, `gemini-2.5-flash`.
+
+For details, see the report in `report/main.tex`.
+
 ## Key Reference
 
 Friedenberg, M., & Halpern, J. Y. (2019). Blameworthiness in Multi-Agent Settings. *Proceedings of the AAAI Conference on Artificial Intelligence*, 33(01), 525–532.
